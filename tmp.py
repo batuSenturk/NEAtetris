@@ -1,22 +1,22 @@
 import pygame
 import random
 
-# Initialize Pygame
+#initialize Pygame
 pygame.init()
 
-# Screen dimensions
+#screen dimensions
 SCREEN_WIDTH = 300
 SCREEN_HEIGHT = 600
 GRID_WIDTH = 10
 GRID_HEIGHT = 20
 CELL_SIZE = 30
 
-# Colors
+#colors
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 GRAY = (128, 128, 128)
 
-# Shapes
+#shapes
 SHAPES = [
     [[1, 1, 1],
      [0, 1, 0]],
@@ -39,18 +39,20 @@ SHAPES = [
      [0, 0, 1]]
 ]
 
-# Initialize the screen
+#initialise screen
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.display.set_caption('Tetris')
 
-# Function to draw the grid
+
+#draw the grid
 def draw_grid():
     for y in range(GRID_HEIGHT):
         for x in range(GRID_WIDTH):
             rect = pygame.Rect(x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE)
             pygame.draw.rect(screen, GRAY, rect, 1)
 
-# Function to draw a piece
+
+#draw a piece
 def draw_piece(piece, offset):
     shape = SHAPES[piece]
     off_x, off_y = offset
@@ -60,7 +62,8 @@ def draw_piece(piece, offset):
                 rect = pygame.Rect((off_x + x) * CELL_SIZE, (off_y + y) * CELL_SIZE, CELL_SIZE, CELL_SIZE)
                 pygame.draw.rect(screen, WHITE, rect)
 
-# Function to check collision
+
+#check collision
 def check_collision(grid, shape, offset):
     off_x, off_y = offset
     for y, row in enumerate(shape):
@@ -72,7 +75,8 @@ def check_collision(grid, shape, offset):
                     return True
     return False
 
-# Function to lock a piece in place
+
+#lock a piece in place
 def lock_piece(grid, shape, offset):
     off_x, off_y = offset
     for y, row in enumerate(shape):
@@ -80,14 +84,16 @@ def lock_piece(grid, shape, offset):
             if cell:
                 grid[y + off_y][x + off_x] = 1
 
-# Function to clear completed lines
+
+#clear completed lines
 def clear_lines(grid):
     new_grid = [row for row in grid if any(cell == 0 for cell in row)]
     lines_cleared = GRID_HEIGHT - len(new_grid)
     new_grid = [[0] * GRID_WIDTH for _ in range(lines_cleared)] + new_grid
     return new_grid, lines_cleared
 
-# Function to draw the grid cells
+
+#draw the grid cells
 def draw_grid_cells(grid):
     for y in range(GRID_HEIGHT):
         for x in range(GRID_WIDTH):
@@ -95,7 +101,15 @@ def draw_grid_cells(grid):
                 rect = pygame.Rect(x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE)
                 pygame.draw.rect(screen, WHITE, rect)
 
-# Main game loop
+
+#display score
+def draw_score(score):
+    font = pygame.font.Font(None, 36)
+    text = font.render(f"Score: {score}", True, WHITE)
+    screen.blit(text, (10, 10))
+
+
+#main game loop
 def main():
     global grid
     grid = [[0 for _ in range(GRID_WIDTH)] for _ in range(GRID_HEIGHT)]
@@ -107,11 +121,13 @@ def main():
     running = True
     game_over = False
 
+
     while running:
         screen.fill(BLACK)
         draw_grid()
         draw_grid_cells(grid)
         draw_piece(piece, (piece_x, piece_y))
+        draw_score(score)
         pygame.display.flip()
 
         for event in pygame.event.get():
@@ -155,7 +171,7 @@ def main():
             pygame.time.wait(2000)
             running = False
 
-        clock.tick(10)
+        clock.tick(5)
 
     pygame.quit()
 
