@@ -1,5 +1,6 @@
 import pygame
 import random
+import pickle
 
 #initialize Pygame
 pygame.init()
@@ -109,6 +110,25 @@ def draw_score(score):
     screen.blit(text, (10, 10))
 
 
+#draw the level
+def draw_level(level):
+    font = pygame.font.Font(None, 36)
+    text = font.render(f"Level: {level}", True, WHITE)
+    screen.blit(text, (200, 10))
+
+
+#save the game
+def save_game(grid, piece, piece_x, piece_y, score, level, speed):
+    with open("savegame.pkl", "wb") as f:
+        pickle.dump((grid, piece, piece_x, piece_y, score, level, speed, f))
+    
+
+#load the game
+def load_game():
+    with open("savegame.pkl", "rb") as f:
+        return pickle.load(f)
+
+
 #main game loop
 def main():
     global grid
@@ -118,8 +138,11 @@ def main():
     piece_x = GRID_WIDTH // 2 - len(SHAPES[piece][0]) // 2
     piece_y = 0
     score = 0
+    level = 1
+    speed = 5
     running = True
     game_over = False
+    paused = False
 
 
     while running:
@@ -128,6 +151,7 @@ def main():
         draw_grid_cells(grid)
         draw_piece(piece, (piece_x, piece_y))
         draw_score(score)
+        draw_level(level)
         pygame.display.flip()
 
         for event in pygame.event.get():
@@ -150,18 +174,26 @@ def main():
                 elif event.key == pygame.K_SPACE:
                     while not check_collision(grid, SHAPES[piece], (piece_x, piece_y + 1)):
                         piece_y += 1
+                elif event.key == pygame.K_s:
+                    save_game(grid, piece, piece_x, piece_y, score, level, speed)
+                elif event.key == pygame.K_l:
+                    grid, piece, piece_x, piece_y, score, level, speed = load_game()
 
-        if not check_collision(grid, SHAPES[piece], (piece_x, piece_y + 1)):
-            piece_y += 1
-        else:
-            lock_piece(grid, SHAPES[piece], (piece_x, piece_y))
-            grid, lines_cleared = clear_lines(grid)
-            score += lines_cleared * 100
-            piece = random.randint(0, len(SHAPES) - 1)
-            piece_x = GRID_WIDTH // 2 - len(SHAPES[piece][0]) // 2
-            piece_y = 0
-            if check_collision(grid, SHAPES[piece], (piece_x, piece_y)):
-                game_over = True
+        if not paused and not game_over:
+            if not check_collision(grid, SHAPES[piece], (piece_x, piece_y + 1)):
+                piece_y += 1
+            else:
+                lock_piece(grid, SHAPES[piece], (piece_x, piece_y))
+                grid, lines_cleared = clear_lines(grid)
+                score += lines_cleared * 100
+                if lines_cleared > 0 and score // (level * 100) > 0:
+                    level += 1
+                    speed = max(1, speed - 1)
+                piece = random.randint(0, len(SHAPES) - 1)
+                piece_x = GRID_WIDTH // 2 - len(SHAPES[piece][0]) // 2
+                piece_y = 0
+                if check_collision(grid, SHAPES[piece], (piece_x, piece_y)):
+                    game_over = True
 
         if game_over:
             font = pygame.font.Font(None, 36)
