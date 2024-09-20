@@ -9,7 +9,7 @@ from menu import Menu
 from button import Button
 from constants import (
     SCREEN_WIDTH, SCREEN_HEIGHT, COLORS, FONT_NAME,
-    INITIAL_DROP_SPEED, MIN_DROP_SPEED, SPEED_INCREMENT
+    INITIAL_DROP_SPEED, MIN_DROP_SPEED, SPEED_INCREMENT, GHOST_ALPHA
 )
 
 class Game:
@@ -151,6 +151,9 @@ class Game:
             self.screen.fill(COLORS['background'])
             self.grid.draw(self.screen)
             if not self.game_over:
+                # Draw the ghost piece
+                self.draw_ghost_piece()
+                # Draw the current piece
                 self.current_piece.draw(self.screen)
             self.hud.draw(self.screen)
             if self.is_paused:
@@ -183,3 +186,20 @@ class Game:
         # Draw buttons
         for button in self.game_over_buttons:
             button.draw(self.screen)
+    
+    def draw_ghost_piece(self):
+        ghost_piece = self.current_piece.get_ghost_position()
+        for x, y in ghost_piece.get_block_positions():
+            if y >= 0:
+                rect = pygame.Rect(
+                    self.grid.x_offset + x * self.grid.cell_size,
+                    self.grid.y_offset + y * self.grid.cell_size,
+                    self.grid.cell_size,
+                    self.grid.cell_size,
+                )
+                # Use a semi-transparent version of the piece's color
+                ghost_surface = pygame.Surface((self.grid.cell_size, self.grid.cell_size), pygame.SRCALPHA)
+                r, g, b = self.current_piece.color
+                ghost_surface.fill((r, g, b, GHOST_ALPHA))
+                self.screen.blit(ghost_surface, rect.topleft)
+                pygame.draw.rect(self.screen, COLORS['white'], rect, 1)

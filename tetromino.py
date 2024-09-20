@@ -2,6 +2,7 @@
 
 import pygame
 from constants import COLORS
+import copy
 
 SHAPES = {
     'I': [[1, 1, 1, 1]],
@@ -26,7 +27,7 @@ class Tetromino:
         self.color = COLORS[shape_name]
         self.grid = grid
         self.x = grid.width // 2 - len(self.shape[0]) // 2
-        self.y = -2  # Start above the grid
+        self.y = -1  # Start above the grid
         self.is_locked = False
 
     def move(self, dx, dy):
@@ -47,6 +48,24 @@ class Tetromino:
     def hard_drop(self):
         while not self.is_locked:
             self.move(0, 1)
+
+    def get_ghost_position(self):
+        """Calculate the ghost piece position."""
+        # Create a copy of the current tetromino
+        ghost_tetromino = Tetromino(self.shape_name, self.grid)
+        ghost_tetromino.shape = copy.deepcopy(self.shape)
+        ghost_tetromino.color = self.color
+        ghost_tetromino.x = self.x
+        ghost_tetromino.y = self.y
+        ghost_tetromino.is_locked = self.is_locked
+
+        # Move the ghost piece down until it collides
+        while not self.grid.is_collision(ghost_tetromino):
+            ghost_tetromino.y += 1
+        # Move it back up one position to the last valid position
+        ghost_tetromino.y -= 1
+
+        return ghost_tetromino
 
     def get_block_positions(self):
         positions = []

@@ -45,3 +45,6 @@ BUTTON_HOVER_COLOR = (100, 100, 100)
 BUTTON_TEXT_COLOR = (255, 255, 255)
 BUTTON_WIDTH = 300
 BUTTON_HEIGHT = 50
+
+# Define ghost piece transparency
+GHOST_ALPHA = 50  # Transparency level (0-255)
