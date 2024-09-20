@@ -21,9 +21,14 @@ class Grid:
         return False
 
     def lock_piece(self, piece):
+        game_over = False
         for x, y in piece.get_block_positions():
-            if y >= 0:
+            if y < 0:
+                # Block is above the grid; this should trigger game over
+                game_over = True
+            elif y >= 0:
                 self.cells[y][x] = piece.color
+        return game_over
 
     def clear_lines(self):
         lines_cleared = 0
