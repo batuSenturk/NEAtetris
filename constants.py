@@ -48,3 +48,10 @@ BUTTON_HEIGHT = 50
 
 # Define ghost piece transparency
 GHOST_ALPHA = 50  # Transparency level (0-255)
+
+# High Score Constants
+HIGH_SCORE_FILE = 'highscores.json'
+MAX_HIGH_SCORES = 5
+
+# Animation constants
+ANIMATION_SPEED = 15  # Determines how quickly the animation fades out

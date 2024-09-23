@@ -9,7 +9,7 @@ class Menu:
         self.game = game
         self.font = pygame.font.Font(FONT_NAME, 36)
         self.title_font = pygame.font.Font(FONT_NAME, 72)
-        self.state = 'main'  # Possible states: 'main', 'rules'
+        self.state = 'main'  # Possible states: 'main', 'rules', 'high_scores'
         self.selected_mode = None
 
         # Define buttons for game modes
@@ -40,11 +40,23 @@ class Menu:
             action=self.start_game
         )
 
-        # Back button in 'rules' state
+        # Back button in 'rules' and 'high_scores' state
         self.back_button = Button(
             rect=(20, 20, 100, 40),
             text="Back",
             action=self.go_back
+        )
+
+        # High Scores button in main menu
+        self.high_scores_button = Button(
+            rect=(
+                SCREEN_WIDTH // 2 - BUTTON_WIDTH // 2,
+                SCREEN_HEIGHT // 2 + 150,
+                BUTTON_WIDTH,
+                BUTTON_HEIGHT
+            ),
+            text="High Scores",
+            action=self.show_high_scores
         )
 
     def select_mode(self, mode):
@@ -57,8 +69,11 @@ class Menu:
         self.game.start_new_game()
         self.game.current_screen = 'game'
 
-    def go_back(self, game):
+    def go_back(self, game=None):
         self.state = 'main'
+
+    def show_high_scores(self, game=None):
+        self.game.current_screen = 'high_scores'
 
     def handle_events(self):
         for event in pygame.event.get():
@@ -69,9 +84,13 @@ class Menu:
             if self.state == 'main':
                 for button in self.buttons:
                     button.handle_event(event, self.game)
+                self.high_scores_button.handle_event(event, self.game)
             elif self.state == 'rules':
                 self.play_button.handle_event(event, self.game)
                 self.back_button.handle_event(event, self.game)
+            elif self.state == 'high_scores':
+                # High scores are handled in the Game class
+                pass
 
     def draw(self, screen):
         screen.fill(MENU_BACKGROUND_COLOR)
@@ -81,20 +100,28 @@ class Menu:
             screen.blit(title_text, title_rect)
             for button in self.buttons:
                 button.draw(screen)
+            self.high_scores_button.draw(screen)
         elif self.state == 'rules':
             # Display rules and controls
             self.draw_rules(screen)
             self.play_button.draw(screen)
             self.back_button.draw(screen)
+        elif self.state == 'high_scores':
+            # Display high scores
+            self.draw_high_scores(screen)
 
     def update(self):
         mouse_pos = pygame.mouse.get_pos()
         if self.state == 'main':
             for button in self.buttons:
                 button.hovered = button.rect.collidepoint(mouse_pos)
+            self.high_scores_button.hovered = self.high_scores_button.rect.collidepoint(mouse_pos)
         elif self.state == 'rules':
             self.play_button.hovered = self.play_button.rect.collidepoint(mouse_pos)
             self.back_button.hovered = self.back_button.rect.collidepoint(mouse_pos)
+        elif self.state == 'high_scores':
+            # High scores buttons handled in Game class
+            pass
 
     def draw_rules(self, screen):
         # Display the rules and controls for the selected mode
@@ -119,3 +146,21 @@ class Menu:
             text_rect = text_surf.get_rect(center=(SCREEN_WIDTH // 2, y_offset))
             screen.blit(text_surf, text_rect)
             y_offset += 40
+
+    def draw_high_scores(self, screen):
+        # Display the high scores
+        high_scores = self.game.high_score.scores
+        font = pygame.font.Font(FONT_NAME, 48)
+        title = font.render("High Scores", True, (255, 255, 255))
+        title_rect = title.get_rect(center=(SCREEN_WIDTH // 2, 100))
+        screen.blit(title, title_rect)
+
+        # Display high scores
+        font_small = pygame.font.Font(FONT_NAME, 36)
+        for idx, entry in enumerate(high_scores):
+            score_text = font_small.render(f"{idx + 1}. {entry['name']} - {entry['score']}", True, (255, 255, 255))
+            score_rect = score_text.get_rect(center=(SCREEN_WIDTH // 2, 200 + idx * 50))
+            screen.blit(score_text, score_rect)
+
+        # Draw back button
+        self.back_button.draw(screen)
