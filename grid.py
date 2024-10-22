@@ -91,3 +91,7 @@ class Grid:
                     anim_surface.fill((255, 255, 255, self.animation_alpha))
                     screen.blit(anim_surface, rect.topleft)
                     pygame.draw.rect(screen, COLORS['white'], rect, 1)
+
+    def is_board_clear(self):
+        """Check if the entire board is clear"""
+        return all(cell == 0 for row in self.cells for cell in row)

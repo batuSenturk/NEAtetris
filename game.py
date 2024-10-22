@@ -13,6 +13,7 @@ from constants import (
     SCREEN_WIDTH, SCREEN_HEIGHT, COLORS, FONT_NAME,
     INITIAL_DROP_SPEED, MIN_DROP_SPEED, SPEED_INCREMENT, GHOST_ALPHA
 )
+from tetromino import Tetromino
 
 class Game:
     def __init__(self, screen):
@@ -32,6 +33,11 @@ class Game:
         self.drop_timer = 0
         self.drop_speed = INITIAL_DROP_SPEED
         self.last_update_time = pygame.time.get_ticks()
+        self.soft_drop_count = 0
+        self.drop_height = 0
+        self.last_rotation = False
+        self.last_move_was_rotation = False
+        self.hard_drop_count = 0
 
         # Back button when game is paused
         self.back_button = Button(
@@ -108,14 +114,20 @@ class Game:
                     if event.type == pygame.KEYDOWN:
                         if event.key == pygame.K_LEFT:
                             self.current_piece.move(-1, 0)
+                            self.last_move_was_rotation = False
                         elif event.key == pygame.K_RIGHT:
                             self.current_piece.move(1, 0)
+                            self.last_move_was_rotation = False
                         elif event.key == pygame.K_DOWN:
-                            self.current_piece.move(0, 1)
+                            if self.current_piece.move(0, 1):
+                                self.soft_drop_count += 1
+                            self.last_move_was_rotation = False
                         elif event.key == pygame.K_UP:
-                            self.current_piece.rotate()
+                            self.last_rotation = self.current_piece.rotate()
+                            self.last_move_was_rotation = True
                         elif event.key == pygame.K_SPACE:
-                            self.current_piece.hard_drop()
+                            self.hard_drop_count = self.current_piece.hard_drop()
+                            self.last_move_was_rotation = False
                         elif event.key == pygame.K_p:
                             self.is_paused = True
         elif self.current_screen == 'enter_name':
@@ -140,8 +152,8 @@ class Game:
             self.menu.update()
         elif self.current_screen == 'game':
             if self.game_over or self.is_paused:
-                # Do not update the game state if the game is over or paused
                 return
+
             current_time = pygame.time.get_ticks()
             delta_time = current_time - self.last_update_time
             self.drop_timer += delta_time
@@ -150,26 +162,47 @@ class Game:
             if self.drop_timer > self.drop_speed:
                 self.current_piece.move(0, 1)
                 self.drop_timer = 0
+                self.drop_height += 1
+                self.last_move_was_rotation = False
 
             if self.current_piece.is_locked:
-                # Before spawning a new piece, check if the locked piece is above the grid
-                for x, y in self.current_piece.get_block_positions():
-                    if y < 0:
-                        self.game_over = True
-                        self.current_screen = 'game_over'
-                        self.check_high_score()
-                        return  # Exit update to prevent spawning a new piece
+                # Check for T-spin
+                t_spin_type = self.check_t_spin()
+                mini_t_spin = self.check_mini_t_spin() if t_spin_type else False
+
                 self.grid.lock_piece(self.current_piece)
                 lines_cleared = self.grid.clear_lines()
+                
+                # Calculate score
+                turn_score = self.score.update(
+                    lines_cleared,
+                    t_spin_type,
+                    mini_t_spin,
+                    self.drop_height,
+                    self.soft_drop_count,
+                    self.hard_drop_count
+                )
+                
+                # Reset drop counters
+                self.drop_height = 0
+                self.soft_drop_count = 0
+                self.hard_drop_count = 0
+                self.last_rotation = False
+                self.last_move_was_rotation = False
+
                 if lines_cleared > 0:
-                    self.score.update(lines_cleared)
                     self.score.update_level()
                     self.update_drop_speed()
-                    # Trigger line clear animations
                     self.grid.trigger_line_clear_animation(lines_cleared)
+
+                # Check for Tetris Clear (entire board clear)
+                if self.grid.is_board_clear():
+                    tetris_clear_bonus = self.score.add_tetris_clear_bonus()
+                    # You might want to trigger a special animation or sound here
+
                 self.current_piece = self.piece_generator.get_next_piece()
                 self.next_piece = self.piece_generator.preview_next_piece()
-                # Check for collision immediately after spawning the new piece
+
                 if self.grid.is_collision(self.current_piece):
                     self.game_over = True
                     self.current_screen = 'game_over'
@@ -287,3 +320,43 @@ class Game:
         # Draw buttons
         for button in self.high_score_buttons:
             button.draw(self.screen)
+
+    def check_t_spin(self):
+        if self.current_piece.shape_name != 'T' or not self.last_move_was_rotation:
+            return False
+        
+        center_x, center_y = self.current_piece.x + 1, self.current_piece.y + 1
+        corners = [
+            (center_x - 1, center_y - 1),
+            (center_x + 1, center_y - 1),
+            (center_x - 1, center_y + 1),
+            (center_x + 1, center_y + 1)
+        ]
+        
+        filled_corners = sum(1 for x, y in corners if self.is_cell_filled(x, y))
+        return filled_corners >= 3
+
+    def check_mini_t_spin(self):
+        if self.current_piece.shape_name != 'T' or not self.last_move_was_rotation:
+            return False
+        
+        center_x, center_y = self.current_piece.x + 1, self.current_piece.y + 1
+        front_corners = self.get_front_corners(self.current_piece)
+        
+        filled_front_corners = sum(1 for x, y in front_corners if self.is_cell_filled(x, y))
+        return filled_front_corners == 1
+
+    def is_cell_filled(self, x, y):
+        if x < 0 or x >= self.grid.width or y < 0 or y >= self.grid.height:
+            return True
+        return bool(self.grid.cells[y][x])
+
+    def get_front_corners(self, piece):
+        if piece.rotation_state == 0:  # T
+            return [(piece.x, piece.y + 2), (piece.x + 2, piece.y + 2)]
+        elif piece.rotation_state == 1:  # ⊢
+            return [(piece.x, piece.y), (piece.x, piece.y + 2)]
+        elif piece.rotation_state == 2:  # ⊥
+            return [(piece.x, piece.y), (piece.x + 2, piece.y)]
+        else:  # ⊣
+            return [(piece.x + 2, piece.y), (piece.x + 2, piece.y + 2)]
