@@ -32,7 +32,7 @@ class Menu:
         self.play_button = Button(
             rect=(
                 SCREEN_WIDTH // 2 - 75,
-                SCREEN_HEIGHT - 150,
+                SCREEN_HEIGHT - 100,  # Moved up by 50 pixels
                 150,
                 50
             ),
@@ -140,12 +140,12 @@ class Menu:
             "Clear lines by filling them completely.",
             "The game ends when the pieces reach the top."
         ]
-        y_offset = 200
+        y_offset = 150  # Start higher up
         for line in rules_text:
             text_surf = self.font.render(line, True, (255, 255, 255))
             text_rect = text_surf.get_rect(center=(SCREEN_WIDTH // 2, y_offset))
             screen.blit(text_surf, text_rect)
-            y_offset += 40
+            y_offset += 35  # Reduced vertical spacing
 
     def draw_high_scores(self, screen):
         # Display the high scores
