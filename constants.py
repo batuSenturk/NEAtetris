@@ -54,4 +54,4 @@ HIGH_SCORE_FILE = 'highscores.json'
 MAX_HIGH_SCORES = 5
 
 # Animation constants
-ANIMATION_SPEED = 15  # Determines how quickly the animation fades out
+ANIMATION_SPEED = 0.5  # Adjust this value to control the speed of animations (0.0 to 1.0)

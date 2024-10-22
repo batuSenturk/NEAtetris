@@ -1,7 +1,7 @@
 # tetromino.py
 
 import pygame
-from constants import COLORS
+from constants import COLORS, ANIMATION_SPEED
 import copy
 
 SHAPES = {
@@ -54,17 +54,27 @@ class Tetromino:
         self.y = -1  # Start above the grid
         self.is_locked = False
         self.rotation_state = 0
+        self.visual_x = self.x * grid.cell_size + grid.x_offset
+        self.visual_y = self.y * grid.cell_size + grid.y_offset
+        self.target_x = self.visual_x
+        self.target_y = self.visual_y
 
     def move(self, dx, dy):
+        old_x, old_y = self.x, self.y
         self.x += dx
         self.y += dy
         if self.grid.is_collision(self):
-            self.x -= dx
-            self.y -= dy
+            self.x, self.y = old_x, old_y
             if dy > 0:
                 self.is_locked = True
             return False
+        self.target_x = self.x * self.grid.cell_size + self.grid.x_offset
+        self.target_y = self.y * self.grid.cell_size + self.grid.y_offset
         return True
+
+    def update_position(self):
+        self.visual_x += (self.target_x - self.visual_x) * ANIMATION_SPEED
+        self.visual_y += (self.target_y - self.visual_y) * ANIMATION_SPEED
 
     def rotate(self, clockwise=True):
         old_shape = self.shape
@@ -80,6 +90,9 @@ class Tetromino:
         if not self.wall_kick(old_rotation_state):
             self.shape = old_shape
             self.rotation_state = old_rotation_state
+        else:
+            self.target_x = self.x * self.grid.cell_size + self.grid.x_offset
+            self.target_y = self.y * self.grid.cell_size + self.grid.y_offset
 
     def wall_kick(self, old_rotation_state):
         if self.shape_name == 'O':
@@ -132,8 +145,8 @@ class Tetromino:
         for x, y in self.get_block_positions():
             if y >= 0:
                 rect = pygame.Rect(
-                    self.grid.x_offset + x * self.grid.cell_size,
-                    self.grid.y_offset + y * self.grid.cell_size,
+                    int(self.visual_x + (x - self.x) * self.grid.cell_size),
+                    int(self.visual_y + (y - self.y) * self.grid.cell_size),
                     self.grid.cell_size,
                     self.grid.cell_size,
                 )

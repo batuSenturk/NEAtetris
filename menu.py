@@ -65,9 +65,10 @@ class Menu:
 
     def start_game(self, game):
         # Start the game with the selected mode
-        self.game.mode = self.selected_mode
-        self.game.start_new_game()
-        self.game.current_screen = 'game'
+        game.mode = self.selected_mode
+        game.transition.start()
+        game.current_screen = 'transition_to_game'
+        game.start_new_game()
 
     def go_back(self, game=None):
         self.state = 'main'
