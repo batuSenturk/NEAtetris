@@ -237,7 +237,7 @@ class Game:
                         self.grid.clear_lines()
                     
                     # Calculate score with the correct number of lines cleared
-                    turn_score = self.score.update(
+                    turn_score, notifications = self.score.update(
                         lines_cleared,
                         t_spin_type,
                         mini_t_spin,
@@ -245,6 +245,7 @@ class Game:
                         self.soft_drop_count,
                         self.hard_drop_count
                     )
+                    self.hud.add_notifications(notifications)
                     
                     self.drop_height = 0
                     self.soft_drop_count = 0
@@ -272,6 +273,8 @@ class Game:
                 self.level_up_effect -= 1/60
                 if self.level_up_effect <= 0:
                     self.level_up_effect = None
+
+            self.hud.update()
 
     def check_high_score(self):
         """Check if the current score qualifies as a high score."""

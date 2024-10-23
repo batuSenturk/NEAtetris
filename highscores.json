@@ -1,5 +1,9 @@
 [
     {
+        "name": "rory",
+        "score": 268067
+    },
+    {
         "name": "marla sing",
         "score": 87681
     },
@@ -14,9 +18,5 @@
     {
         "name": "tyler durd",
         "score": 434
-    },
-    {
-        "name": "hello",
-        "score": 216
     }
 ]

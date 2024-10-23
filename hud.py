@@ -1,12 +1,31 @@
 # hud.py
 
 import pygame
-from constants import FONT_NAME, FONT_SIZE, COLORS, CELL_SIZE, GRID_Y_OFFSET
+from constants import FONT_NAME, FONT_SIZE, COLORS, CELL_SIZE, GRID_Y_OFFSET, SCREEN_WIDTH
 
 class HUD:
     def __init__(self, game):
         self.game = game
         self.font = pygame.font.Font(FONT_NAME, FONT_SIZE)
+        self.small_font = pygame.font.Font(FONT_NAME, FONT_SIZE - 8)
+        self.notifications = []  # List of active notifications
+
+    def add_notifications(self, new_notifications):
+        # Add new notifications to the list
+        for notif in new_notifications:
+            self.notifications.append({
+                'text': notif['text'],
+                'color': notif['color'],
+                'lifetime': notif['lifetime'],
+                'y_pos': 150  # Starting y position
+            })
+
+    def update(self):
+        # Update notifications
+        for notif in self.notifications[:]:
+            notif['lifetime'] -= 1
+            if notif['lifetime'] <= 0:
+                self.notifications.remove(notif)
 
     def draw(self, screen):
         # Display score
@@ -35,3 +54,9 @@ class HUD:
                     )
                     pygame.draw.rect(screen, next_piece.color, rect)
                     pygame.draw.rect(screen, COLORS['white'], rect, 1)
+
+        # Draw notifications
+        for idx, notif in enumerate(self.notifications):
+            text_surface = self.small_font.render(notif['text'], True, notif['color'])
+            text_rect = text_surface.get_rect(center=(SCREEN_WIDTH - 200, GRID_Y_OFFSET + 300 + idx * 30))
+            screen.blit(text_surface, text_rect)
