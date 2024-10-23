@@ -83,7 +83,13 @@ class Score:
         return turn_score
 
     def update_level(self):
-        self.level = (self.lines_cleared // 10) + 1
+        """Update the level based on lines cleared"""
+        # Calculate new level (every 10 lines = 1 level)
+        new_level = (self.lines_cleared // LINES_PER_LEVEL) + 1
+        
+        # Only update if the level has increased
+        if new_level > self.level:
+            self.level = new_level
 
     def add_tetris_clear_bonus(self):
         """Add bonus for clearing the entire board"""

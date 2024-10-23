@@ -232,9 +232,11 @@ class Game:
                                     self.particle_system.add_particle(particle_x, particle_y, color)
                     
                     # Now clear the lines
-                    lines_cleared = self.grid.clear_lines()
+                    lines_cleared = len(lines_to_clear)  # Changed from grid.clear_lines()
+                    if lines_cleared > 0:
+                        self.grid.clear_lines()
                     
-                    # Calculate score
+                    # Calculate score with the correct number of lines cleared
                     turn_score = self.score.update(
                         lines_cleared,
                         t_spin_type,
