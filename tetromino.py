@@ -1,7 +1,7 @@
 # tetromino.py
 
 import pygame
-from constants import COLORS, ANIMATION_SPEED
+from constants import COLORS, ANIMATION_SPEED, MAX_LOCK_MOVES
 import copy
 
 SHAPES = {
@@ -58,16 +58,27 @@ class Tetromino:
         self.visual_y = self.y * grid.cell_size + grid.y_offset
         self.target_x = self.visual_x
         self.target_y = self.visual_y
+        self.lock_delay_timer = 0
+        self.lock_moves_count = 0
+        self.lock_delay_active = False
 
     def move(self, dx, dy):
         old_x, old_y = self.x, self.y
         self.x += dx
         self.y += dy
+        
         if self.grid.is_collision(self):
             self.x, self.y = old_x, old_y
-            if dy > 0:
-                self.is_locked = True
+            if dy > 0:  # If moving down caused collision
+                if not self.lock_delay_active:
+                    self.lock_delay_active = True
+                    self.lock_delay_timer = 0
             return False
+        
+        # Reset lock delay if moving horizontally while touching ground
+        if dx != 0 and self.is_touching_ground():
+            self.reset_lock_delay()
+        
         self.target_x = self.x * self.grid.cell_size + self.grid.x_offset
         self.target_y = self.y * self.grid.cell_size + self.grid.y_offset
         return True
@@ -123,12 +134,30 @@ class Tetromino:
         print("All wall kicks failed")  # Debug print
         return False
 
+    def is_touching_ground(self):
+        # Check if piece is touching ground or other pieces
+        self.y += 1
+        collision = self.grid.is_collision(self)
+        self.y -= 1
+        return collision
+
+    def reset_lock_delay(self):
+        if self.lock_delay_active and self.lock_moves_count < MAX_LOCK_MOVES:
+            self.lock_delay_timer = 0
+            self.lock_moves_count += 1
+            # If we're no longer touching ground after the move, deactivate lock delay
+            if not self.is_touching_ground():
+                self.lock_delay_active = False
+                self.lock_moves_count = 0
+
     def hard_drop(self):
         drop_distance = 0
-        while not self.is_locked:
-            self.move(0, 1)
+        while not self.grid.is_collision(self):
+            self.y += 1
             drop_distance += 1
-        return drop_distance - 1  # Subtract 1 because the last move locks the piece
+        self.y -= 1
+        self.is_locked = True  # Immediately lock on hard drop
+        return drop_distance - 1
 
     def get_ghost_position(self):
         """Calculate the ghost piece position."""

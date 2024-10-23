@@ -55,3 +55,7 @@ MAX_HIGH_SCORES = 5
 
 # Animation constants
 ANIMATION_SPEED = 0.5  # Slow - 0.0, Fast - 1.0
+
+# Lock delay settings
+LOCK_DELAY = 500  # 500ms = 0.5 seconds
+MAX_LOCK_MOVES = 10  # Maximum number of moves before forcing lock

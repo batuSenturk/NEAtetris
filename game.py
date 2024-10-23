@@ -11,7 +11,8 @@ from high_score import HighScore
 from input_box import InputBox
 from constants import (
     SCREEN_WIDTH, SCREEN_HEIGHT, COLORS, FONT_NAME,
-    INITIAL_DROP_SPEED, MIN_DROP_SPEED, SPEED_INCREMENT, GHOST_ALPHA
+    INITIAL_DROP_SPEED, MIN_DROP_SPEED, SPEED_INCREMENT, GHOST_ALPHA,
+    LOCK_DELAY, MAX_LOCK_MOVES
 )
 from tetromino import Tetromino
 from particle import ParticleSystem
@@ -127,33 +128,37 @@ class Game:
                     # Handle input events
                     if event.type == pygame.KEYDOWN:
                         if event.key == pygame.K_LEFT:
-                            self.current_piece.move(-1, 0)
-                            self.last_move_was_rotation = False
+                            if self.current_piece.move(-1, 0):
+                                self.last_move_was_rotation = False
+                                if self.current_piece.is_touching_ground():
+                                    self.current_piece.reset_lock_delay()
                         elif event.key == pygame.K_RIGHT:
-                            self.current_piece.move(1, 0)
-                            self.last_move_was_rotation = False
+                            if self.current_piece.move(1, 0):
+                                self.last_move_was_rotation = False
+                                if self.current_piece.is_touching_ground():
+                                    self.current_piece.reset_lock_delay()
                         elif event.key == pygame.K_DOWN:
                             if self.current_piece.move(0, 1):
                                 self.soft_drop_count += 1
-                            self.last_move_was_rotation = False
+                                self.last_move_was_rotation = False
+                                if self.current_piece.is_touching_ground():
+                                    self.current_piece.reset_lock_delay()
                         elif event.key == pygame.K_UP:
                             old_pos = (self.current_piece.x, self.current_piece.y)
                             old_state = self.current_piece.rotation_state
                             
                             if self.current_piece.rotate():
-                                # Check if the piece actually changed position or rotation state
                                 new_pos = (self.current_piece.x, self.current_piece.y)
                                 new_state = self.current_piece.rotation_state
                                 
                                 if old_state != new_state or old_pos != new_pos:
                                     self.last_move_was_rotation = True
-                                    print(f"Rotation successful - Position changed from {old_pos} to {new_pos}, State from {old_state} to {new_state}")
+                                    if self.current_piece.is_touching_ground():
+                                        self.current_piece.reset_lock_delay()
                                 else:
                                     self.last_move_was_rotation = False
-                                    print("Rotation succeeded but piece didn't change")
                             else:
                                 self.last_move_was_rotation = False
-                                print("Rotation failed completely")
                         elif event.key == pygame.K_SPACE:
                             self.hard_drop_count = self.current_piece.hard_drop()
                             self.last_move_was_rotation = False
@@ -224,7 +229,20 @@ class Game:
                     self.current_piece.move(0, 1)
                     self.drop_timer = 0
                     self.drop_height += 1
-                    # Don't reset last_move_was_rotation here anymore
+
+                # Handle lock delay
+                if self.current_piece.lock_delay_active:
+                    self.current_piece.lock_delay_timer += delta_time
+                    if (self.current_piece.lock_delay_timer >= LOCK_DELAY or 
+                        self.current_piece.lock_moves_count >= MAX_LOCK_MOVES):
+                        # Only lock if actually touching ground
+                        if self.current_piece.is_touching_ground():
+                            self.current_piece.is_locked = True
+                        else:
+                            # Reset lock delay if not touching ground
+                            self.current_piece.lock_delay_active = False
+                            self.current_piece.lock_moves_count = 0
+                            self.current_piece.lock_delay_timer = 0
 
                 if self.current_piece.is_locked:
                     # Use the stored rotation state for T-spin detection
