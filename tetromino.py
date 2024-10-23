@@ -87,16 +87,26 @@ class Tetromino:
             self.shape = [list(row) for row in zip(*[row[::-1] for row in self.shape])]
             self.rotation_state = (self.rotation_state - 1) % 4
 
-        if not self.wall_kick(old_rotation_state):
-            self.shape = old_shape
-            self.rotation_state = old_rotation_state
-        else:
+        # Try basic rotation first
+        if not self.grid.is_collision(self):
             self.target_x = self.x * self.grid.cell_size + self.grid.x_offset
             self.target_y = self.y * self.grid.cell_size + self.grid.y_offset
+            return True
+
+        # If basic rotation fails, try wall kicks
+        if self.wall_kick(old_rotation_state):
+            self.target_x = self.x * self.grid.cell_size + self.grid.x_offset
+            self.target_y = self.y * self.grid.cell_size + self.grid.y_offset
+            return True
+
+        # If all attempts fail, revert the rotation
+        self.shape = old_shape
+        self.rotation_state = old_rotation_state
+        return False
 
     def wall_kick(self, old_rotation_state):
         if self.shape_name == 'O':
-            return True  # O piece doesn't need wall kick
+            return False  # O piece shouldn't need wall kicks
 
         kick_data = WALL_KICK_DATA['I'] if self.shape_name == 'I' else WALL_KICK_DATA['JLSTZ']
         kick_set = kick_data[old_rotation_state]
@@ -105,10 +115,12 @@ class Tetromino:
             self.x += dx
             self.y += dy
             if not self.grid.is_collision(self):
+                print(f"Wall kick succeeded with offset: ({dx}, {dy})")  # Debug print
                 return True
             self.x -= dx
             self.y -= dy
 
+        print("All wall kicks failed")  # Debug print
         return False
 
     def hard_drop(self):

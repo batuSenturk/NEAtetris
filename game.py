@@ -137,8 +137,23 @@ class Game:
                                 self.soft_drop_count += 1
                             self.last_move_was_rotation = False
                         elif event.key == pygame.K_UP:
-                            self.last_rotation = self.current_piece.rotate()
-                            self.last_move_was_rotation = True
+                            old_pos = (self.current_piece.x, self.current_piece.y)
+                            old_state = self.current_piece.rotation_state
+                            
+                            if self.current_piece.rotate():
+                                # Check if the piece actually changed position or rotation state
+                                new_pos = (self.current_piece.x, self.current_piece.y)
+                                new_state = self.current_piece.rotation_state
+                                
+                                if old_state != new_state or old_pos != new_pos:
+                                    self.last_move_was_rotation = True
+                                    print(f"Rotation successful - Position changed from {old_pos} to {new_pos}, State from {old_state} to {new_state}")
+                                else:
+                                    self.last_move_was_rotation = False
+                                    print("Rotation succeeded but piece didn't change")
+                            else:
+                                self.last_move_was_rotation = False
+                                print("Rotation failed completely")
                         elif event.key == pygame.K_SPACE:
                             self.hard_drop_count = self.current_piece.hard_drop()
                             self.last_move_was_rotation = False
@@ -202,56 +217,52 @@ class Game:
             if self.current_piece:
                 self.current_piece.update_position()
 
+                # Store the current last_move_was_rotation state before any automatic movements
+                was_rotation = self.last_move_was_rotation
+
                 if self.drop_timer > self.drop_speed:
                     self.current_piece.move(0, 1)
                     self.drop_timer = 0
                     self.drop_height += 1
-                    self.last_move_was_rotation = False
+                    # Don't reset last_move_was_rotation here anymore
 
                 if self.current_piece.is_locked:
-                    t_spin_type = self.check_t_spin()
-                    mini_t_spin = self.check_mini_t_spin() if t_spin_type else False
+                    # Use the stored rotation state for T-spin detection
+                    t_spin_type = self.check_t_spin() if was_rotation else False
 
                     # Lock the piece first
                     self.grid.lock_piece(self.current_piece)
                     
-                    # Clear lines and create particles
+                    # Clear lines and handle scoring
                     lines_to_clear = []
                     for y in range(self.grid.height - 1, -1, -1):
                         if all(self.grid.cells[y][x] != 0 for x in range(self.grid.width)):
                             lines_to_clear.append(y)
                     
-                    # Create particles before removing lines
-                    for y in lines_to_clear:
-                        for x in range(self.grid.width):
-                            if self.grid.cells[y][x] != 0:
-                                particle_x = self.grid.x_offset + x * self.grid.cell_size + self.grid.cell_size // 2
-                                particle_y = self.grid.y_offset + y * self.grid.cell_size + self.grid.cell_size // 2
-                                color = self.grid.cells[y][x]
-                                for _ in range(5):  # Create 5 particles per cell
-                                    self.particle_system.add_particle(particle_x, particle_y, color)
-                    
-                    # Now clear the lines
-                    lines_cleared = len(lines_to_clear)  # Changed from grid.clear_lines()
+                    lines_cleared = len(lines_to_clear)
                     if lines_cleared > 0:
                         self.grid.clear_lines()
                     
                     # Calculate score with the correct number of lines cleared
                     turn_score, notifications = self.score.update(
                         lines_cleared,
-                        t_spin_type,
-                        mini_t_spin,
+                        t_spin_type,  # This now returns "normal", "mini", or False
+                        False,  # Remove this parameter since we don't need it anymore
                         self.drop_height,
                         self.soft_drop_count,
                         self.hard_drop_count
                     )
-                    self.hud.add_notifications(notifications)
                     
+                    # Add notifications to HUD
+                    if notifications:
+                        self.hud.add_notifications(notifications)
+                    
+                    # Only reset flags after all scoring is done
                     self.drop_height = 0
                     self.soft_drop_count = 0
                     self.hard_drop_count = 0
                     self.last_rotation = False
-                    self.last_move_was_rotation = False
+                    self.last_move_was_rotation = False  # Reset this last
 
                     if lines_cleared > 0:
                         self.score.update_level()
@@ -412,44 +423,71 @@ class Game:
             button.draw(self.screen)
 
     def check_t_spin(self):
+        # Only check for T-spins if it's a T piece and the last move was a rotation
         if self.current_piece.shape_name != 'T' or not self.last_move_was_rotation:
             return False
         
-        center_x, center_y = self.current_piece.x + 1, self.current_piece.y + 1
+        # Get the T piece's center coordinates
+        center_x = self.current_piece.x + 1
+        center_y = self.current_piece.y + 1
+        
+        # Check all four corners around the T piece's center
         corners = [
-            (center_x - 1, center_y - 1),
-            (center_x + 1, center_y - 1),
-            (center_x - 1, center_y + 1),
-            (center_x + 1, center_y + 1)
+            (center_x - 1, center_y - 1),  # Top-left
+            (center_x + 1, center_y - 1),  # Top-right
+            (center_x - 1, center_y + 1),  # Bottom-left
+            (center_x + 1, center_y + 1)   # Bottom-right
         ]
         
+        # Count filled corners
         filled_corners = sum(1 for x, y in corners if self.is_cell_filled(x, y))
-        return filled_corners >= 3
-
-    def check_mini_t_spin(self):
-        if self.current_piece.shape_name != 'T' or not self.last_move_was_rotation:
-            return False
         
-        center_x, center_y = self.current_piece.x + 1, self.current_piece.y + 1
+        # Get the two front corners based on rotation state
         front_corners = self.get_front_corners(self.current_piece)
+        back_corners = self.get_back_corners(self.current_piece)
         
         filled_front_corners = sum(1 for x, y in front_corners if self.is_cell_filled(x, y))
-        return filled_front_corners == 1
+        filled_back_corners = sum(1 for x, y in back_corners if self.is_cell_filled(x, y))
+        
+        # T-spin conditions:
+        # Normal T-spin: 3 or more corners filled but doesn't meet mini T-spin requirements
+        # Mini T-spin: 3 or more corners filled with at least 2 front corners filled
+        if filled_corners >= 3:
+            if filled_front_corners >= 2:
+                return "mini"
+            else:
+                return "normal"
+        
+        return False
+
+    def get_back_corners(self, piece):
+        # Get the two back corners based on rotation state
+        if piece.rotation_state == 0:  # T pointing up
+            return [(piece.x, piece.y), (piece.x + 2, piece.y)]  # Top corners
+        elif piece.rotation_state == 1:  # T pointing right
+            return [(piece.x + 2, piece.y), (piece.x + 2, piece.y + 2)]  # Right corners
+        elif piece.rotation_state == 2:  # T pointing down
+            return [(piece.x, piece.y + 2), (piece.x + 2, piece.y + 2)]  # Bottom corners
+        else:  # T pointing left (3)
+            return [(piece.x, piece.y), (piece.x, piece.y + 2)]  # Left corners
 
     def is_cell_filled(self, x, y):
+        # Consider out-of-bounds cells as filled
         if x < 0 or x >= self.grid.width or y < 0 or y >= self.grid.height:
             return True
+        # Check if the cell contains a block
         return bool(self.grid.cells[y][x])
 
     def get_front_corners(self, piece):
-        if piece.rotation_state == 0:  # T
-            return [(piece.x, piece.y + 2), (piece.x + 2, piece.y + 2)]
-        elif piece.rotation_state == 1:  # ⊢
-            return [(piece.x, piece.y), (piece.x, piece.y + 2)]
-        elif piece.rotation_state == 2:  # ⊥
-            return [(piece.x, piece.y), (piece.x + 2, piece.y)]
-        else:  # ⊣
-            return [(piece.x + 2, piece.y), (piece.x + 2, piece.y + 2)]
+        # Get the two front corners based on rotation state
+        if piece.rotation_state == 0:  # T pointing up
+            return [(piece.x, piece.y + 2), (piece.x + 2, piece.y + 2)]  # Bottom corners
+        elif piece.rotation_state == 1:  # T pointing right
+            return [(piece.x, piece.y), (piece.x, piece.y + 2)]  # Left corners
+        elif piece.rotation_state == 2:  # T pointing down
+            return [(piece.x, piece.y), (piece.x + 2, piece.y)]  # Top corners
+        else:  # T pointing left (3)
+            return [(piece.x + 2, piece.y), (piece.x + 2, piece.y + 2)]  # Right corners
 
     def create_line_clear_particles(self, lines_cleared):
         for y in self.grid.lines_to_clear:
