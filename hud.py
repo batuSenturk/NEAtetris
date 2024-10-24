@@ -1,7 +1,7 @@
 # hud.py
 
 import pygame
-from constants import FONT_NAME, FONT_SIZE, COLORS, CELL_SIZE, GRID_Y_OFFSET, SCREEN_WIDTH
+from constants import FONT_NAME, FONT_SIZE, COLORS, CELL_SIZE, GRID_Y_OFFSET, SCREEN_WIDTH, HOLD_X_OFFSET, HOLD_Y_OFFSET
 
 class HUD:
     def __init__(self, game):
@@ -60,3 +60,22 @@ class HUD:
             text_surface = self.small_font.render(notif['text'], True, notif['color'])
             text_rect = text_surface.get_rect(center=(SCREEN_WIDTH - 200, GRID_Y_OFFSET + 300 + idx * 30))
             screen.blit(text_surface, text_rect)
+
+        # Display hold piece text
+        hold_text = self.font.render("Hold:", True, COLORS['white'])
+        screen.blit(hold_text, (HOLD_X_OFFSET, HOLD_Y_OFFSET))
+
+        # Draw held piece if it exists
+        if self.game.held_piece:
+            block_size = CELL_SIZE
+            for y, row in enumerate(self.game.held_piece.shape):
+                for x, cell in enumerate(row):
+                    if cell:
+                        rect = pygame.Rect(
+                            HOLD_X_OFFSET + (x * block_size),
+                            HOLD_Y_OFFSET + 40 + (y * block_size),
+                            block_size,
+                            block_size,
+                        )
+                        pygame.draw.rect(screen, self.game.held_piece.color, rect)
+                        pygame.draw.rect(screen, COLORS['white'], rect, 1)

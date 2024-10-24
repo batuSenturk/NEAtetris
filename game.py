@@ -49,6 +49,8 @@ class Game:
         self.start_timer = None
         self.start_timer_duration = 3  # 3 seconds
         self.countdown_timer = None
+        self.held_piece = None
+        self.can_hold = True  # Can only hold once per piece
 
         # Back button when game is paused
         self.back_button = Button(
@@ -98,6 +100,8 @@ class Game:
         self.last_update_time = pygame.time.get_ticks()
         self.current_screen = 'transition_to_game'
         self.countdown_timer = None  # Will be set after transition
+        self.held_piece = None
+        self.can_hold = True
 
     def return_to_menu(self, game=None):
         """Return to the main menu."""
@@ -164,6 +168,10 @@ class Game:
                             self.last_move_was_rotation = False
                         elif event.key == pygame.K_p:
                             self.is_paused = True
+                        elif event.key == pygame.K_c:  # Hold piece
+                            if self.can_hold:
+                                self.hold_piece()
+                                self.can_hold = False
         elif self.current_screen == 'enter_name':
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -199,6 +207,7 @@ class Game:
                 self.current_screen = 'game'
                 self.current_piece = self.piece_generator.get_next_piece()
                 self.next_piece = self.piece_generator.preview_next_piece()
+                self.can_hold = True  # Reset hold ability for new piece
         elif self.current_screen == 'game':
             # Always update particles
             self.particle_system.update(1/60)
@@ -209,6 +218,7 @@ class Game:
                     self.start_timer = None
                     self.current_piece = self.piece_generator.get_next_piece()
                     self.next_piece = self.piece_generator.preview_next_piece()
+                    self.can_hold = True  # Reset hold ability for new piece
                 return
 
             if self.game_over or self.is_paused:
@@ -259,6 +269,8 @@ class Game:
                     
                     lines_cleared = len(lines_to_clear)
                     if lines_cleared > 0:
+                        # Create particles before clearing the lines
+                        self.create_line_clear_particles(lines_to_clear)  # Pass the lines to clear
                         self.grid.clear_lines()
                     
                     # Calculate score with the correct number of lines cleared
@@ -291,6 +303,7 @@ class Game:
 
                     self.current_piece = self.piece_generator.get_next_piece()
                     self.next_piece = self.piece_generator.preview_next_piece()
+                    self.can_hold = True  # Reset hold ability for new piece
 
                     if self.grid.is_collision(self.current_piece):
                         self.game_over = True
@@ -507,14 +520,18 @@ class Game:
         else:  # T pointing left (3)
             return [(piece.x + 2, piece.y), (piece.x + 2, piece.y + 2)]  # Right corners
 
-    def create_line_clear_particles(self, lines_cleared):
-        for y in self.grid.lines_to_clear:
+    def create_line_clear_particles(self, lines_to_clear):
+        """Create particles for each block in the cleared lines"""
+        for y in lines_to_clear:
             for x in range(self.grid.width):
-                if self.grid.cells[y][x] != 0:
+                if self.grid.cells[y][x] != 0:  # If there's a block at this position
+                    # Calculate the actual pixel position
                     particle_x = self.grid.x_offset + x * self.grid.cell_size + self.grid.cell_size // 2
                     particle_y = self.grid.y_offset + y * self.grid.cell_size + self.grid.cell_size // 2
-                    color = self.grid.cells[y][x]
-                    for _ in range(5):  # Create 5 particles per cell
+                    color = self.grid.cells[y][x]  # Get the color of the block
+                    
+                    # Create multiple particles per block
+                    for _ in range(5):  # Create 5 particles per block
                         self.particle_system.add_particle(particle_x, particle_y, color)
 
     def change_screen(self, new_screen):
@@ -549,4 +566,18 @@ class Game:
         text = font.render(str(max(1, int(self.countdown_timer + 1))), True, COLORS['white'])
         rect = text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2))
         self.screen.blit(text, rect)
+
+    def hold_piece(self):
+        """Handle the piece hold mechanic"""
+        if self.held_piece is None:
+            # First hold
+            self.held_piece = Tetromino(self.current_piece.shape_name, self.grid)
+            self.current_piece = self.piece_generator.get_next_piece()
+            self.next_piece = self.piece_generator.preview_next_piece()
+        else:
+            # Swap current and held pieces
+            temp_shape_name = self.current_piece.shape_name
+            self.current_piece = Tetromino(self.held_piece.shape_name, self.grid)
+            self.current_piece.reset_position()  # Reset position of the swapped piece
+            self.held_piece = Tetromino(temp_shape_name, self.grid)
 

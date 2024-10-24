@@ -1,5 +1,7 @@
 # constants.py
 
+import pygame
+
 # Screen dimensions
 SCREEN_WIDTH = 800
 SCREEN_HEIGHT = 800
@@ -59,3 +61,10 @@ ANIMATION_SPEED = 0.5  # Slow - 0.0, Fast - 1.0
 # Lock delay settings
 LOCK_DELAY = 500  # 500ms = 0.5 seconds
 MAX_LOCK_MOVES = 10  # Maximum number of moves before forcing lock
+
+# After GRID_Y_OFFSET
+HOLD_X_OFFSET = 50  # X position for hold piece display
+HOLD_Y_OFFSET = 100  # Y position for hold piece display
+
+# In the scoring section, add:
+HOLD_KEY = pygame.K_c  # Key to hold pieces

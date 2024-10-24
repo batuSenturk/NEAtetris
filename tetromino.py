@@ -50,17 +50,21 @@ class Tetromino:
         self.shape = SHAPES[shape_name]
         self.color = COLORS[shape_name]
         self.grid = grid
-        self.x = grid.width // 2 - len(self.shape[0]) // 2
-        self.y = -1  # Start above the grid
-        self.is_locked = False
+        self.reset_position()
+
+    def reset_position(self):
+        """Reset the piece to starting position"""
+        self.x = self.grid.width // 2 - len(self.shape[0]) // 2
+        self.y = -1
         self.rotation_state = 0
-        self.visual_x = self.x * grid.cell_size + grid.x_offset
-        self.visual_y = self.y * grid.cell_size + grid.y_offset
-        self.target_x = self.visual_x
-        self.target_y = self.visual_y
+        self.is_locked = False
         self.lock_delay_timer = 0
         self.lock_moves_count = 0
         self.lock_delay_active = False
+        self.visual_x = self.x * self.grid.cell_size + self.grid.x_offset
+        self.visual_y = self.y * self.grid.cell_size + self.grid.y_offset
+        self.target_x = self.visual_x
+        self.target_y = self.visual_y
 
     def move(self, dx, dy):
         old_x, old_y = self.x, self.y

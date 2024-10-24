@@ -125,7 +125,7 @@ class Menu:
             pass
 
     def draw_rules(self, screen):
-        # Display the rules and controls for the selected mode
+        # Update the rules text to include hold mechanic
         rules_text = [
             f"Mode: {self.selected_mode}",
             "",
@@ -135,7 +135,13 @@ class Menu:
             "Up Arrow - Rotate",
             "Down Arrow - Soft Drop",
             "Space - Hard Drop",
+            "C - Hold Piece",  # Add this line
             "P - Pause",
+            "",
+            "Hold Feature:",
+            "Press C to store current piece",
+            "or swap with held piece",
+            "(Can only hold once per piece)",
             "",
             "Objective:",
             "Clear lines by filling them completely.",
