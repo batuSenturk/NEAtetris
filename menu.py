@@ -9,30 +9,60 @@ class Menu:
         self.game = game
         self.font = pygame.font.Font(FONT_NAME, 36)
         self.title_font = pygame.font.Font(FONT_NAME, 72)
-        self.state = 'main'  # Possible states: 'main', 'rules', 'high_scores'
+        self.state = 'main'  # Possible states: 'main', 'rules', 'high_scores', 'ai', 'modes'
         self.selected_mode = None
 
-        # Define buttons for game modes
-        modes = ['Classic Mode', 'Endless Mode', 'Time Attack']
-        self.buttons = []
-        for i, mode in enumerate(modes):
-            button = Button(
+        # Define main menu buttons
+        self.buttons = [
+            Button(
                 rect=(
                     SCREEN_WIDTH // 2 - BUTTON_WIDTH // 2,
-                    SCREEN_HEIGHT // 2 - 100 + i * 70,
+                    SCREEN_HEIGHT // 2 - 120,
                     BUTTON_WIDTH,
                     BUTTON_HEIGHT
                 ),
-                text=mode,
-                action=lambda g, m=mode: self.select_mode(m)
+                text="Classic",
+                action=lambda g: self.select_mode("Classic Mode")
+            ),
+            Button(
+                rect=(
+                    SCREEN_WIDTH // 2 - BUTTON_WIDTH // 2,
+                    SCREEN_HEIGHT // 2 - 50,
+                    BUTTON_WIDTH,
+                    BUTTON_HEIGHT
+                ),
+                text="Modes",
+                action=self.show_modes_screen
+            ),
+            Button(
+                rect=(
+                    SCREEN_WIDTH // 2 - BUTTON_WIDTH // 2,
+                    SCREEN_HEIGHT // 2 + 30,
+                    BUTTON_WIDTH,
+                    BUTTON_HEIGHT
+                ),
+                text="AI",
+                action=self.show_ai_screen
             )
-            self.buttons.append(button)
+        ]
+
+        # AI screen buttons
+        self.watch_button = Button(
+            rect=(
+                SCREEN_WIDTH // 2 - BUTTON_WIDTH // 2,
+                SCREEN_HEIGHT // 2 + 100,
+                BUTTON_WIDTH,
+                BUTTON_HEIGHT
+            ),
+            text="Watch",
+            action=self.start_ai_game
+        )
 
         # Play button in 'rules' state
         self.play_button = Button(
             rect=(
                 SCREEN_WIDTH // 2 - 75,
-                SCREEN_HEIGHT - 100,  # Moved up by 50 pixels
+                SCREEN_HEIGHT - 100,
                 150,
                 50
             ),
@@ -40,7 +70,7 @@ class Menu:
             action=self.start_game
         )
 
-        # Back button in 'rules' and 'high_scores' state
+        # Back button for all secondary screens
         self.back_button = Button(
             rect=(20, 20, 100, 40),
             text="Back",
@@ -51,7 +81,7 @@ class Menu:
         self.high_scores_button = Button(
             rect=(
                 SCREEN_WIDTH // 2 - BUTTON_WIDTH // 2,
-                SCREEN_HEIGHT // 2 + 150,
+                SCREEN_HEIGHT // 2 + 110,
                 BUTTON_WIDTH,
                 BUTTON_HEIGHT
             ),
@@ -76,6 +106,18 @@ class Menu:
     def show_high_scores(self, game=None):
         self.game.current_screen = 'high_scores'
 
+    def show_ai_screen(self, game=None):
+        self.state = 'ai'
+
+    def show_modes_screen(self, game=None):
+        self.state = 'modes'
+
+    def start_ai_game(self, game):
+        game.mode = "AI"
+        game.transition.start()
+        game.current_screen = 'transition_to_game'
+        game.start_new_game()
+
     def handle_events(self):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -89,9 +131,13 @@ class Menu:
             elif self.state == 'rules':
                 self.play_button.handle_event(event, self.game)
                 self.back_button.handle_event(event, self.game)
+            elif self.state == 'ai':
+                self.watch_button.handle_event(event, self.game)
+                self.back_button.handle_event(event, self.game)
+            elif self.state == 'modes':
+                self.back_button.handle_event(event, self.game)
             elif self.state == 'high_scores':
-                # High scores are handled in the Game class
-                pass
+                self.back_button.handle_event(event, self.game)
 
     def draw(self, screen):
         screen.fill(MENU_BACKGROUND_COLOR)
@@ -103,13 +149,48 @@ class Menu:
                 button.draw(screen)
             self.high_scores_button.draw(screen)
         elif self.state == 'rules':
-            # Display rules and controls
             self.draw_rules(screen)
             self.play_button.draw(screen)
             self.back_button.draw(screen)
+        elif self.state == 'ai':
+            self.draw_ai_screen(screen)
+            self.watch_button.draw(screen)
+            self.back_button.draw(screen)
+        elif self.state == 'modes':
+            self.draw_modes_screen(screen)
+            self.back_button.draw(screen)
         elif self.state == 'high_scores':
-            # Display high scores
             self.draw_high_scores(screen)
+
+    def draw_modes_screen(self, screen):
+        # Draw a blank screen with a back button
+        title = self.title_font.render("Modes", True, (255, 255, 255))
+        title_rect = title.get_rect(center=(SCREEN_WIDTH // 2, 150))
+        screen.blit(title, title_rect)
+
+    def draw_ai_screen(self, screen):
+        # Draw title
+        title = self.title_font.render("AI Mode", True, (255, 255, 255))
+        title_rect = title.get_rect(center=(SCREEN_WIDTH // 2, 150))
+        screen.blit(title, title_rect)
+
+        # Draw description
+        description_lines = [
+            "Watch an AI play Tetris!",
+            "",
+            "The AI will demonstrate advanced",
+            "techniques and strategies",
+            "for playing Tetris.",
+            "",
+            "Press 'Watch' to begin!"
+        ]
+
+        y_offset = 250
+        for line in description_lines:
+            text = self.font.render(line, True, (255, 255, 255))
+            rect = text.get_rect(center=(SCREEN_WIDTH // 2, y_offset))
+            screen.blit(text, rect)
+            y_offset += 40
 
     def update(self):
         mouse_pos = pygame.mouse.get_pos()

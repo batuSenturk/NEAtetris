@@ -117,18 +117,20 @@ class Game:
                 if event.type == pygame.QUIT:
                     pygame.quit()
                     exit()
-                if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-                    self.return_to_menu()
-                if self.game_over:
-                    for button in self.game_over_buttons:
-                        button.handle_event(event, self)
-                    continue
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_ESCAPE:
+                        self.return_to_menu()
+                    elif event.key == pygame.K_p:
+                        self.is_paused = not self.is_paused  # Toggle pause state
+
                 if self.is_paused:
                     # Handle events for the back button when paused
                     self.back_button.handle_event(event, self)
-                    if event.type == pygame.KEYDOWN and event.key == pygame.K_p:
-                        self.is_paused = False
-                else:
+                elif self.mode != "AI":  # Only handle game events if not in AI mode
+                    if self.game_over:
+                        for button in self.game_over_buttons:
+                            button.handle_event(event, self)
+                        continue
                     # Handle input events
                     if event.type == pygame.KEYDOWN:
                         if event.key == pygame.K_LEFT:
@@ -166,8 +168,6 @@ class Game:
                         elif event.key == pygame.K_SPACE:
                             self.hard_drop_count = self.current_piece.hard_drop()
                             self.last_move_was_rotation = False
-                        elif event.key == pygame.K_p:
-                            self.is_paused = True
                         elif event.key == pygame.K_c:  # Hold piece
                             if self.can_hold:
                                 self.hold_piece()
