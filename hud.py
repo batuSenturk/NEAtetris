@@ -34,26 +34,31 @@ class HUD:
         # Display level
         level_text = self.font.render(f"Level: {self.game.score.level}", True, COLORS['white'])
         screen.blit(level_text, (500, GRID_Y_OFFSET + 50))
-        # Display next piece text
+        # Display next pieces text
         next_text = self.font.render("Next:", True, COLORS['white'])
         screen.blit(next_text, (500, GRID_Y_OFFSET + 100))
 
-        # Draw next piece
-        next_piece = self.game.next_piece
+        # Draw next pieces
         block_size = CELL_SIZE
-        offset_x = 17  # Adjusted to move the piece slightly to the right
-        offset_y = 7   # Adjusted to move the piece down, below the "Next:" text
-        for y, row in enumerate(next_piece.shape):
-            for x, cell in enumerate(row):
-                if cell:
-                    rect = pygame.Rect(
-                        500 + (x * block_size),  # Use absolute positioning
-                        GRID_Y_OFFSET + 140 + (y * block_size),  # Use absolute positioning and move down
-                        block_size,
-                        block_size,
-                    )
-                    pygame.draw.rect(screen, next_piece.color, rect)
-                    pygame.draw.rect(screen, COLORS['white'], rect, 1)
+        for piece_idx, next_piece in enumerate(self.game.next_pieces):
+            # Calculate vertical offset for each piece
+            piece_offset = piece_idx * (block_size * 3 + 20)  # Add spacing between pieces
+            
+            # Center each piece type
+            piece_width = len(next_piece.shape[0]) * block_size
+            x_centering = (4 * block_size - piece_width) // 2  # Center based on max piece width (4 blocks)
+            
+            for y, row in enumerate(next_piece.shape):
+                for x, cell in enumerate(row):
+                    if cell:
+                        rect = pygame.Rect(
+                            500 + x_centering + (x * block_size),
+                            GRID_Y_OFFSET + 140 + piece_offset + (y * block_size),
+                            block_size,
+                            block_size,
+                        )
+                        pygame.draw.rect(screen, next_piece.color, rect)
+                        pygame.draw.rect(screen, COLORS['white'], rect, 1)
 
         # Draw notifications
         for idx, notif in enumerate(self.notifications):

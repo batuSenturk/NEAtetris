@@ -2,7 +2,7 @@
 
 import copy
 import numpy as np
-from tetromino import Tetromino  # Add this import
+from tetromino import Tetromino, SHAPES
 
 class TetrisAI:
     def __init__(self, game):
@@ -36,69 +36,62 @@ class TetrisAI:
         return [[1 if cell else 0 for cell in row] for row in self.game.grid.cells]
 
     def generate_possible_moves(self):
-        """Generate all possible moves for the current piece with safety checks"""
+        """Generate all possible moves for the current piece"""
         if not self.game.current_piece:
             return []
 
         possible_moves = []
         original_piece = self.game.current_piece
-        
+
         # Try all rotations (0 to 3)
         for rotation in range(4):
-            # Create a fresh test piece
+            # Create a fresh test piece for each rotation
             test_piece = Tetromino(original_piece.shape_name, self.game.grid)
             test_piece.shape = copy.deepcopy(original_piece.shape)
             test_piece.rotation_state = 0
-            test_piece.y = -1  # Start at standard spawn height
-            
-            # Apply rotations with safety check
+
+            # Start at the spawn position (y = -2 instead of -4)
+            test_piece.y = -2  # Modified spawn height
+
+            # Apply rotations without wall kicks
             rotation_successful = True
-            rotation_attempts = 0
-            while test_piece.rotation_state != rotation and rotation_attempts < 4:
-                if not test_piece.rotate():
+            for _ in range(rotation):
+                if not test_piece.rotate(use_wall_kicks=False):
                     rotation_successful = False
                     break
-                rotation_attempts += 1
-            
+
             if not rotation_successful:
                 continue
-            
-            # Try horizontal positions
+
+            # Try all horizontal positions
             for x in range(-2, self.game.grid.width + 2):
                 # Create a fresh piece for each x position
                 position_piece = Tetromino(original_piece.shape_name, self.game.grid)
                 position_piece.shape = copy.deepcopy(test_piece.shape)
                 position_piece.rotation_state = test_piece.rotation_state
                 position_piece.x = x
-                position_piece.y = -1
-                
-                # Skip if initial position is invalid
-                if self.game.grid.is_collision(position_piece):
-                    continue
-                
-                # Find landing position with safety check
-                drop_attempts = 0
-                max_drop_attempts = self.game.grid.height * 2  # Reasonable maximum
-                
-                while not self.game.grid.is_collision(position_piece) and drop_attempts < max_drop_attempts:
-                    position_piece.y += 1
-                    drop_attempts += 1
-                
-                position_piece.y -= 1  # Move back up one step
-                
-                # Only add valid moves
-                if position_piece.y >= -1 and not self.game.grid.is_collision(position_piece):
-                    move = {
-                        'rotation': rotation,
-                        'x': x,
-                        'y': position_piece.y,
-                        'type': 'normal'
-                    }
-                    
-                    if position_piece.shape_name == 'T':
-                        move['type'] = 'potential_tspin'
-                    
-                    possible_moves.append(move)
+                position_piece.y = -2  # Use same spawn height
+
+                # If valid position, find landing position
+                if not self.game.grid.is_collision(position_piece):
+                    # Find landing position
+                    while not self.game.grid.is_collision(position_piece):
+                        position_piece.y += 1
+                    position_piece.y -= 1
+
+                    # Only add moves that result in valid positions
+                    if position_piece.y >= -2:
+                        move = {
+                            'rotation': rotation,
+                            'x': x,
+                            'y': position_piece.y,
+                            'type': 'normal'
+                        }
+
+                        if position_piece.shape_name == 'T':
+                            move['type'] = 'potential_tspin'
+
+                        possible_moves.append(move)
 
         return possible_moves
 
@@ -110,7 +103,7 @@ class TetrisAI:
         print(f"Position: ({state['current_piece']['x']}, {state['current_piece']['y']})")
         print(f"Rotation: {state['current_piece']['rotation']}")
         print(f"Next Piece: {state['next_piece']}")
-        
+
         print("\nBoard State:")
         for row in state['board']:
             print(''.join(['█' if cell else '.' for cell in row]))
@@ -124,7 +117,7 @@ class TetrisAI:
         print("\n=== Possible Moves ===")
         moves = self.generate_possible_moves()
         print(f"Total possible moves: {len(moves)}")
-        
+
         # Get and print the best move
         best_move = self.get_best_move()
         if best_move:
@@ -132,7 +125,7 @@ class TetrisAI:
             print(f"Rotation: {best_move['rotation']}")
             print(f"Position: ({best_move['x']}, {best_move['y']})")
             print(f"Type: {best_move['type']}")
-            
+
             # Simulate and evaluate the best move
             resulting_board = self.simulate_move(best_move)
             score = self.evaluate_position(resulting_board)
@@ -149,7 +142,7 @@ class TetrisAI:
         """Calculate all heuristics for a given board state"""
         height = len(board_state)
         width = len(board_state[0])
-        
+
         # Calculate column heights
         heights = [0] * width
         for col in range(width):
@@ -216,13 +209,33 @@ class TetrisAI:
         """Simulate a move and return the resulting board state"""
         # Create a deep copy of the current board
         board_copy = copy.deepcopy(self.game.grid.cells)
-        piece_copy = copy.deepcopy(self.game.current_piece)
+        piece_copy = Tetromino(self.game.current_piece.shape_name, self.game.grid)
 
         # Apply the move
         piece_copy.x = move['x']
         piece_copy.y = move['y']
-        while piece_copy.rotation_state != move['rotation']:
-            piece_copy.rotate()
+        piece_copy.rotation_state = 0  # Reset rotation state
+        piece_copy.shape = SHAPES[piece_copy.shape_name]  # Reset shape
+
+        # Handle rotation with safety check
+        target_rotation = move['rotation']
+        current_rotation = piece_copy.rotation_state
+        max_rotation_attempts = 4  # Prevent infinite loops
+
+        while current_rotation != target_rotation and max_rotation_attempts > 0:
+            if not piece_copy.rotate(use_wall_kicks=False):
+                # If rotation fails, this move is invalid
+                return None
+            current_rotation = piece_copy.rotation_state
+            max_rotation_attempts -= 1
+
+        # If we couldn't achieve the desired rotation, this move is invalid
+        if current_rotation != target_rotation:
+            return None
+
+        # Check for collision at the final position
+        if self.game.grid.is_collision(piece_copy):
+            return None
 
         # Lock the piece in place
         for x, y in piece_copy.get_block_positions():
@@ -240,9 +253,13 @@ class TetrisAI:
         for move in possible_moves:
             # Simulate the move
             resulting_board = self.simulate_move(move)
+            # Skip invalid moves
+            if resulting_board is None:
+                continue
+
             # Evaluate the resulting position
             score = self.evaluate_position(resulting_board)
-            
+
             # Update best move if this score is better
             if score > best_score:
                 best_score = score

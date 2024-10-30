@@ -20,6 +20,10 @@ import random
 from transition import Transition
 from tetris_ai import TetrisAI
 
+# Add these new constants
+INITIAL_DELAY = 170  # Milliseconds before key repeat starts
+REPEAT_DELAY = 50    # Milliseconds between repeated movements
+
 class Game:
     def __init__(self, screen):
         self.screen = screen
@@ -30,7 +34,7 @@ class Game:
         self.grid = None
         self.piece_generator = None
         self.current_piece = None
-        self.next_piece = None
+        self.next_pieces = None
         self.score = None
         self.hud = None
         self.is_paused = False
@@ -89,12 +93,21 @@ class Game:
             )
         ]
 
+        # Add these new variables to the existing __init__ method
+        self.left_pressed = False
+        self.right_pressed = False
+        self.down_pressed = False
+        self.left_press_time = 0
+        self.right_press_time = 0
+        self.down_press_time = 0
+        self.last_movement_time = 0
+
     def start_new_game(self, game=None):
         # Initialize or reset game variables
         self.grid = Grid(10, 20)
         self.piece_generator = PieceGenerator(self.grid)
         self.current_piece = None  # Set to None initially
-        self.next_piece = self.piece_generator.preview_next_piece()
+        self.next_pieces = self.piece_generator.preview_next_pieces()  # Get list of next pieces
         self.score = Score()
         self.hud = HUD(self)
         self.is_paused = False
@@ -114,6 +127,8 @@ class Game:
         self.game_over = False
 
     def handle_events(self):
+        current_time = pygame.time.get_ticks()
+        
         if self.current_screen == 'menu':
             self.menu.handle_events()
         elif self.current_screen == 'game':
@@ -121,61 +136,99 @@ class Game:
                 if event.type == pygame.QUIT:
                     pygame.quit()
                     exit()
+                if self.is_paused:
+                    self.back_button.handle_event(event, self)
+                    continue  # Skip other input handling while paused
+                    
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_ESCAPE:
                         self.return_to_menu()
                     elif event.key == pygame.K_p:
-                        self.is_paused = not self.is_paused  # Toggle pause state
-
-                if self.is_paused:
-                    # Handle events for the back button when paused
-                    self.back_button.handle_event(event, self)
-                elif self.mode != "AI":  # Only handle game events if not in AI mode
-                    if self.game_over:
-                        for button in self.game_over_buttons:
-                            button.handle_event(event, self)
-                        continue
-                    # Handle input events
-                    if event.type == pygame.KEYDOWN:
-                        if event.key == pygame.K_LEFT:
+                        self.is_paused = not self.is_paused
+                    elif event.key == pygame.K_LEFT:
+                        self.left_pressed = True
+                        self.left_press_time = current_time
+                        if self.current_piece and not self.is_paused and not self.game_over:
                             if self.current_piece.move(-1, 0):
                                 self.last_move_was_rotation = False
                                 if self.current_piece.is_touching_ground():
                                     self.current_piece.reset_lock_delay()
-                        elif event.key == pygame.K_RIGHT:
+                    elif event.key == pygame.K_RIGHT:
+                        self.right_pressed = True
+                        self.right_press_time = current_time
+                        if self.current_piece and not self.is_paused and not self.game_over:
                             if self.current_piece.move(1, 0):
                                 self.last_move_was_rotation = False
                                 if self.current_piece.is_touching_ground():
                                     self.current_piece.reset_lock_delay()
-                        elif event.key == pygame.K_DOWN:
+                    elif event.key == pygame.K_DOWN:
+                        self.down_pressed = True
+                        self.down_press_time = current_time
+                        if self.current_piece and not self.is_paused and not self.game_over:
                             if self.current_piece.move(0, 1):
                                 self.soft_drop_count += 1
                                 self.last_move_was_rotation = False
                                 if self.current_piece.is_touching_ground():
                                     self.current_piece.reset_lock_delay()
-                        elif event.key == pygame.K_UP:
-                            old_pos = (self.current_piece.x, self.current_piece.y)
-                            old_state = self.current_piece.rotation_state
+                    elif event.key == pygame.K_UP:
+                        old_pos = (self.current_piece.x, self.current_piece.y)
+                        old_state = self.current_piece.rotation_state
+                        
+                        if self.current_piece.rotate():
+                            new_pos = (self.current_piece.x, self.current_piece.y)
+                            new_state = self.current_piece.rotation_state
                             
-                            if self.current_piece.rotate():
-                                new_pos = (self.current_piece.x, self.current_piece.y)
-                                new_state = self.current_piece.rotation_state
-                                
-                                if old_state != new_state or old_pos != new_pos:
-                                    self.last_move_was_rotation = True
-                                    if self.current_piece.is_touching_ground():
-                                        self.current_piece.reset_lock_delay()
-                                else:
-                                    self.last_move_was_rotation = False
+                            if old_state != new_state or old_pos != new_pos:
+                                self.last_move_was_rotation = True
+                                if self.current_piece.is_touching_ground():
+                                    self.current_piece.reset_lock_delay()
                             else:
                                 self.last_move_was_rotation = False
-                        elif event.key == pygame.K_SPACE:
-                            self.hard_drop_count = self.current_piece.hard_drop()
+                        else:
                             self.last_move_was_rotation = False
-                        elif event.key == pygame.K_c:  # Hold piece
-                            if self.can_hold:
-                                self.hold_piece()
-                                self.can_hold = False
+                    elif event.key == pygame.K_SPACE:
+                        self.hard_drop_count = self.current_piece.hard_drop()
+                        self.last_move_was_rotation = False
+                    elif event.key == pygame.K_c:  # Hold piece
+                        if self.can_hold:
+                            self.hold_piece()
+                            self.can_hold = False
+
+                elif event.type == pygame.KEYUP:
+                    if event.key == pygame.K_LEFT:
+                        self.left_pressed = False
+                    elif event.key == pygame.K_RIGHT:
+                        self.right_pressed = False
+                    elif event.key == pygame.K_DOWN:
+                        self.down_pressed = False
+
+            # Handle continuous movement
+            if not self.is_paused and not self.game_over and self.current_piece:
+                if self.left_pressed and current_time - self.left_press_time >= INITIAL_DELAY:
+                    if current_time - self.last_movement_time >= REPEAT_DELAY:
+                        if self.current_piece.move(-1, 0):
+                            self.last_move_was_rotation = False
+                            if self.current_piece.is_touching_ground():
+                                self.current_piece.reset_lock_delay()
+                        self.last_movement_time = current_time
+
+                if self.right_pressed and current_time - self.right_press_time >= INITIAL_DELAY:
+                    if current_time - self.last_movement_time >= REPEAT_DELAY:
+                        if self.current_piece.move(1, 0):
+                            self.last_move_was_rotation = False
+                            if self.current_piece.is_touching_ground():
+                                self.current_piece.reset_lock_delay()
+                        self.last_movement_time = current_time
+
+                if self.down_pressed and current_time - self.down_press_time >= INITIAL_DELAY:
+                    if current_time - self.last_movement_time >= REPEAT_DELAY:
+                        if self.current_piece.move(0, 1):
+                            self.soft_drop_count += 1
+                            self.last_move_was_rotation = False
+                            if self.current_piece.is_touching_ground():
+                                self.current_piece.reset_lock_delay()
+                        self.last_movement_time = current_time
+
         elif self.current_screen == 'enter_name':
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -210,8 +263,8 @@ class Game:
             if self.countdown_timer <= 0:
                 self.current_screen = 'game'
                 self.current_piece = self.piece_generator.get_next_piece()
-                self.next_piece = self.piece_generator.preview_next_piece()
-                self.can_hold = True  # Reset hold ability for new piece
+                self.next_pieces = self.piece_generator.preview_next_pieces()
+                self.can_hold = True
         elif self.current_screen == 'game':
             # Always update particles
             self.particle_system.update(1/60)
@@ -221,8 +274,8 @@ class Game:
                 if self.start_timer <= 0:
                     self.start_timer = None
                     self.current_piece = self.piece_generator.get_next_piece()
-                    self.next_piece = self.piece_generator.preview_next_piece()
-                    self.can_hold = True  # Reset hold ability for new piece
+                    self.next_pieces = self.piece_generator.preview_next_pieces()
+                    self.can_hold = True
                 return
 
             if self.game_over or self.is_paused:
@@ -241,15 +294,23 @@ class Game:
                     # Get and execute AI moves
                     best_move = self.ai.get_best_move()
                     if best_move:
-                        # Execute rotation
-                        while self.current_piece.rotation_state != best_move['rotation']:
-                            self.current_piece.rotate()
+                        # Execute rotation with safety check
+                        target_rotation = best_move['rotation']
+                        max_rotation_attempts = 4
+                        
+                        while (self.current_piece.rotation_state != target_rotation and 
+                               max_rotation_attempts > 0):
+                            if not self.current_piece.rotate():
+                                break  # Stop if rotation fails
+                            max_rotation_attempts -= 1
                         
                         # Execute horizontal movement
                         while self.current_piece.x < best_move['x']:
-                            self.current_piece.move(1, 0)
+                            if not self.current_piece.move(1, 0):
+                                break
                         while self.current_piece.x > best_move['x']:
-                            self.current_piece.move(-1, 0)
+                            if not self.current_piece.move(-1, 0):
+                                break
                         
                         # Execute vertical movement (faster drop)
                         if self.current_piece.y < best_move['y']:
@@ -330,7 +391,7 @@ class Game:
                         tetris_clear_bonus = self.score.add_tetris_clear_bonus()
 
                     self.current_piece = self.piece_generator.get_next_piece()
-                    self.next_piece = self.piece_generator.preview_next_piece()
+                    self.next_pieces = self.piece_generator.preview_next_pieces()
                     self.can_hold = True  # Reset hold ability for new piece
 
                     if self.grid.is_collision(self.current_piece):
@@ -601,7 +662,7 @@ class Game:
             # First hold
             self.held_piece = Tetromino(self.current_piece.shape_name, self.grid)
             self.current_piece = self.piece_generator.get_next_piece()
-            self.next_piece = self.piece_generator.preview_next_piece()
+            self.next_pieces = self.piece_generator.preview_next_pieces()
         else:
             # Swap current and held pieces
             temp_shape_name = self.current_piece.shape_name
