@@ -31,17 +31,25 @@ SHAPES = {
 # Wall kick data (SRS)
 WALL_KICK_DATA = {
     'JLSTZ': [
-        [(0, 0), (-1, 0), (-1, 1), (0, -2), (-1, -2)],
-        [(0, 0), (1, 0), (1, -1), (0, 2), (1, 2)],
-        [(0, 0), (1, 0), (1, 1), (0, -2), (1, -2)],
+        # State 0->1
         [(0, 0), (-1, 0), (-1, -1), (0, 2), (-1, 2)],
+        # State 1->2
+        [(0, 0), (1, 0), (1, 1), (0, -2), (1, -2)],
+        # State 2->3
+        [(0, 0), (1, 0), (1, -1), (0, 2), (1, 2)],
+        # State 3->0
+        [(0, 0), (-1, 0), (-1, 1), (0, -2), (-1, -2)]
     ],
     'I': [
-        [(0, 0), (-2, 0), (1, 0), (-2, -1), (1, 2)],
-        [(0, 0), (-1, 0), (2, 0), (-1, 2), (2, -1)],
-        [(0, 0), (2, 0), (-1, 0), (2, 1), (-1, -2)],
-        [(0, 0), (1, 0), (-2, 0), (1, -2), (-2, 1)],
-    ],
+        # State 0->1
+        [(0, 0), (-2, 0), (1, 0), (-2, 1), (1, -2)],
+        # State 1->2
+        [(0, 0), (-1, 0), (2, 0), (-1, -2), (2, 1)],
+        # State 2->3
+        [(0, 0), (2, 0), (-1, 0), (2, -1), (-1, 2)],
+        # State 3->0
+        [(0, 0), (1, 0), (-2, 0), (1, 2), (-2, -1)]
+    ]
 }
 
 class Tetromino:
@@ -92,50 +100,72 @@ class Tetromino:
         self.visual_y += (self.target_y - self.visual_y) * ANIMATION_SPEED
 
     def rotate(self, clockwise=True):
-        old_shape = self.shape
-        old_rotation_state = self.rotation_state
-
-        if clockwise:
-            self.shape = [list(row) for row in zip(*self.shape[::-1])]
-            self.rotation_state = (self.rotation_state + 1) % 4
-        else:
-            self.shape = [list(row) for row in zip(*[row[::-1] for row in self.shape])]
-            self.rotation_state = (self.rotation_state - 1) % 4
-
-        # Try basic rotation first
-        if not self.grid.is_collision(self):
-            self.target_x = self.x * self.grid.cell_size + self.grid.x_offset
-            self.target_y = self.y * self.grid.cell_size + self.grid.y_offset
-            return True
-
-        # If basic rotation fails, try wall kicks
-        if self.wall_kick(old_rotation_state):
-            self.target_x = self.x * self.grid.cell_size + self.grid.x_offset
-            self.target_y = self.y * self.grid.cell_size + self.grid.y_offset
-            return True
-
-        # If all attempts fail, revert the rotation
-        self.shape = old_shape
-        self.rotation_state = old_rotation_state
+        """Improved rotate implementation with safety checks"""
+        # Store original state
+        original_shape = [row[:] for row in self.shape]
+        original_x, original_y = self.x, self.y
+        original_rotation = self.rotation_state
+        
+        # Maximum rotation attempts to prevent infinite loops
+        max_attempts = 4
+        attempts = 0
+        
+        while attempts < max_attempts:
+            # Perform rotation
+            if clockwise:
+                self.shape = [list(row) for row in zip(*self.shape[::-1])]
+                self.rotation_state = (self.rotation_state + 1) % 4
+            else:
+                self.shape = [list(row) for row in zip(*[row[::-1] for row in self.shape])]
+                self.rotation_state = (self.rotation_state - 1) % 4
+            
+            # Check if basic rotation works
+            if not self.grid.is_collision(self):
+                self.target_x = self.x * self.grid.cell_size + self.grid.x_offset
+                self.target_y = self.y * self.grid.cell_size + self.grid.y_offset
+                return True
+            
+            # Try wall kicks
+            if self.wall_kick(original_rotation):
+                self.target_x = self.x * self.grid.cell_size + self.grid.x_offset
+                self.target_y = self.y * self.grid.cell_size + self.grid.y_offset
+                return True
+            
+            # Revert to original state and try again
+            self.shape = [row[:] for row in original_shape]
+            self.x, self.y = original_x, original_y
+            self.rotation_state = original_rotation
+            attempts += 1
+        
         return False
 
     def wall_kick(self, old_rotation_state):
+        """Improved wall kick implementation with better spawn handling"""
         if self.shape_name == 'O':
-            return False  # O piece shouldn't need wall kicks
+            return False
 
+        # Get kick data based on piece type
         kick_data = WALL_KICK_DATA['I'] if self.shape_name == 'I' else WALL_KICK_DATA['JLSTZ']
-        kick_set = kick_data[old_rotation_state]
-
-        for dx, dy in kick_set:
+        
+        # Get the correct test index
+        test_index = old_rotation_state
+        
+        # Try each wall kick test
+        for dx, dy in kick_data[test_index]:
+            # Store original position
+            original_x, original_y = self.x, self.y
+            
+            # Apply kick offset
             self.x += dx
             self.y += dy
+            
+            # Test if this position works
             if not self.grid.is_collision(self):
-                print(f"Wall kick succeeded with offset: ({dx}, {dy})")  # Debug print
                 return True
-            self.x -= dx
-            self.y -= dy
-
-        print("All wall kicks failed")  # Debug print
+            
+            # If not, restore position and try next test
+            self.x, self.y = original_x, original_y
+        
         return False
 
     def is_touching_ground(self):

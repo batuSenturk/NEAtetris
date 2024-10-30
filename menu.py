@@ -252,3 +252,4 @@ class Menu:
 
         # Draw back button
         self.back_button.draw(screen)
+

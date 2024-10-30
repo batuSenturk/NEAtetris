@@ -18,6 +18,7 @@ from tetromino import Tetromino
 from particle import ParticleSystem
 import random
 from transition import Transition
+from tetris_ai import TetrisAI
 
 class Game:
     def __init__(self, screen):
@@ -51,6 +52,9 @@ class Game:
         self.countdown_timer = None
         self.held_piece = None
         self.can_hold = True  # Can only hold once per piece
+        self.ai = TetrisAI(self)
+        self.ai_debug_timer = 0
+        self.ai_debug_interval = 1000  # Print debug info every 1000ms
 
         # Back button when game is paused
         self.back_button = Button(
@@ -231,6 +235,30 @@ class Game:
 
             if self.current_piece:
                 self.current_piece.update_position()
+
+                # AI Mode handling
+                if self.mode == "AI" and not self.is_paused:
+                    # Get and execute AI moves
+                    best_move = self.ai.get_best_move()
+                    if best_move:
+                        # Execute rotation
+                        while self.current_piece.rotation_state != best_move['rotation']:
+                            self.current_piece.rotate()
+                        
+                        # Execute horizontal movement
+                        while self.current_piece.x < best_move['x']:
+                            self.current_piece.move(1, 0)
+                        while self.current_piece.x > best_move['x']:
+                            self.current_piece.move(-1, 0)
+                        
+                        # Execute vertical movement (faster drop)
+                        if self.current_piece.y < best_move['y']:
+                            self.current_piece.move(0, 1)
+
+                    # Print debug info periodically
+                    if current_time - self.ai_debug_timer > self.ai_debug_interval:
+                        self.ai.print_debug_info()
+                        self.ai_debug_timer = current_time
 
                 # Store the current last_move_was_rotation state before any automatic movements
                 was_rotation = self.last_move_was_rotation
@@ -580,4 +608,3 @@ class Game:
             self.current_piece = Tetromino(self.held_piece.shape_name, self.grid)
             self.current_piece.reset_position()  # Reset position of the swapped piece
             self.held_piece = Tetromino(temp_shape_name, self.grid)
-

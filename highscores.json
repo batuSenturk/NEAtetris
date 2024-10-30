@@ -1,5 +1,9 @@
 [
     {
+        "name": "Alice",
+        "score": 713963
+    },
+    {
         "name": "goat",
         "score": 268067
     },
@@ -14,9 +18,5 @@
     {
         "name": "bibbly",
         "score": 87681
-    },
-    {
-        "name": "fein",
-        "score": 72650
     }
 ]
