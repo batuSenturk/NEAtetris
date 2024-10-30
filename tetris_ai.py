@@ -26,7 +26,7 @@ class TetrisAI:
                 'y': self.game.current_piece.y,
                 'rotation': self.game.current_piece.rotation_state
             },
-            'next_piece': self.game.next_piece.shape_name if self.game.next_piece else None,
+            'next_piece': self.game.next_pieces[0].shape_name if self.game.next_pieces else None,  # Get first piece from queue
             'score': self.game.score.score
         }
         return state
