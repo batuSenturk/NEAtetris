@@ -136,16 +136,22 @@ class Game:
                 if event.type == pygame.QUIT:
                     pygame.quit()
                     exit()
-                if self.is_paused:
-                    self.back_button.handle_event(event, self)
-                    continue  # Skip other input handling while paused
-                    
+                
+                # Handle pause button regardless of pause state
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_ESCAPE:
                         self.return_to_menu()
                     elif event.key == pygame.K_p:
-                        self.is_paused = not self.is_paused
-                    elif event.key == pygame.K_LEFT:
+                        if self.current_screen == 'game':
+                            self.is_paused = not self.is_paused
+                
+                # Handle back button and skip other inputs if paused
+                if self.is_paused:
+                    self.back_button.handle_event(event, self)  
+                    continue
+                    
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_LEFT:
                         self.left_pressed = True
                         self.left_press_time = current_time
                         if self.current_piece and not self.is_paused and not self.game_over:

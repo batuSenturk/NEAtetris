@@ -14,6 +14,11 @@ class TetrisAI:
             'holes': -0.35663,
             'bumpiness': -0.184483,
             'tspin_potential': 0.2,  # Custom weight for T-spin opportunities
+            'well_depth': 0.15,        # New: Reward deep wells for I-pieces
+            'surface_variance': -0.2,  # New: Penalize uneven surface
+            'covered_holes': -0.4,     # New: Heavily penalize holes with blocks above
+            'edge_touch': 0.1,         # New: Reward pieces touching edges
+            'blockade': -0.3          # New: Penalize blocking holes
         }
 
     def get_state_representation(self):
@@ -158,14 +163,7 @@ class TetrisAI:
         complete_lines = sum(1 for row in board_state if all(cell == 1 for cell in row))
 
         # Holes
-        holes = 0
-        for col in range(width):
-            block_found = False
-            for row in range(height):
-                if board_state[row][col]:
-                    block_found = True
-                elif block_found:
-                    holes += 1
+        holes = self.calculate_holes(board_state)
 
         # Bumpiness (sum of differences between adjacent columns)
         bumpiness = sum(abs(heights[i] - heights[i+1]) for i in range(width-1))
@@ -173,12 +171,24 @@ class TetrisAI:
         # T-spin potential (count T-shaped gaps with blocks above)
         tspin_potential = self.calculate_tspin_potential(board_state) if self.game.current_piece.shape_name == 'T' else 0
 
+        # Calculate new heuristics
+        surface_variance = self.calculate_surface_variance(heights)
+        covered_holes = self.calculate_covered_holes(board_state)
+        well_depth = self.calculate_well_depth(board_state)
+        blockade = self.calculate_blockade(board_state)
+        edge_touch = self.calculate_edge_touch(board_state)
+
         return {
             'aggregate_height': aggregate_height,
             'complete_lines': complete_lines,
             'holes': holes,
             'bumpiness': bumpiness,
-            'tspin_potential': tspin_potential
+            'tspin_potential': tspin_potential,
+            'surface_variance': surface_variance,
+            'covered_holes': covered_holes,
+            'well_depth': well_depth,
+            'blockade': blockade,
+            'edge_touch': edge_touch
         }
 
     def calculate_tspin_potential(self, board_state):
@@ -266,3 +276,124 @@ class TetrisAI:
                 best_move = move
 
         return best_move
+
+    def calculate_surface_variance(self, heights):
+        """Calculate how uneven the surface is"""
+        if not heights:
+            return 0
+        avg_height = sum(heights) / len(heights)
+        variance = sum((h - avg_height) ** 2 for h in heights) / len(heights)
+        return variance
+
+    def calculate_covered_holes(self, board_state):
+        """Count holes that have blocks above them"""
+        height = len(board_state)
+        width = len(board_state[0])
+        covered_holes = 0
+        
+        for col in range(width):
+            blocks_above = 0
+            for row in range(height):
+                if board_state[row][col]:
+                    blocks_above += 1
+                elif blocks_above > 0:  # There's a hole with blocks above
+                    covered_holes += blocks_above
+        
+        return covered_holes
+
+    def calculate_well_depth(self, board_state):
+        """Calculate the depth of wells (good for I-pieces)"""
+        height = len(board_state)
+        width = len(board_state[0])
+        total_well_depth = 0
+        
+        for col in range(width):
+            if col == 0 or col == width - 1:  # Edge wells are valuable
+                multiplier = 1.5
+            else:
+                multiplier = 1.0
+                
+            well_depth = 0
+            for row in range(height):
+                if not board_state[row][col]:
+                    # Check if adjacent columns are filled
+                    left_filled = col == 0 or board_state[row][col-1]
+                    right_filled = col == width-1 or board_state[row][col+1]
+                    
+                    if left_filled and right_filled:
+                        well_depth += 1
+                    else:
+                        well_depth = 0
+                else:
+                    break
+                
+            total_well_depth += well_depth * multiplier
+        
+        return total_well_depth
+
+    def calculate_blockade(self, board_state):
+        """Calculate how many cells are blocking access to holes"""
+        height = len(board_state)
+        width = len(board_state[0])
+        blockade_count = 0
+        
+        # Find holes first
+        holes = set()
+        for col in range(width):
+            block_found = False
+            for row in range(height):
+                if board_state[row][col]:
+                    block_found = True
+                elif block_found:
+                    holes.add((row, col))
+        
+        # Count blocks that make holes harder to fill
+        for hole_row, hole_col in holes:
+            for row in range(hole_row):
+                if board_state[row][hole_col]:
+                    blockade_count += 1
+        
+        return blockade_count
+
+    def calculate_edge_touch(self, board_state):
+        """Calculate how many blocks are touching the edges"""
+        height = len(board_state)
+        width = len(board_state[0])
+        edge_count = 0
+        
+        # Count left edge touches
+        for row in range(height):
+            if board_state[row][0]:
+                edge_count += 1
+                
+        # Count right edge touches
+        for row in range(height):
+            if board_state[row][width-1]:
+                edge_count += 1
+                
+        return edge_count
+
+    def calculate_holes(self, board_state):
+        """Calculate holes with improved accuracy"""
+        height = len(board_state)
+        width = len(board_state[0])
+        holes = 0
+        
+        for col in range(width):
+            block_found = False
+            hole_streak = 0  # Count consecutive holes
+            for row in range(height):
+                if board_state[row][col]:
+                    block_found = True
+                    if hole_streak > 0:
+                        # Add penalty for consecutive holes
+                        holes += hole_streak * 1.5
+                    hole_streak = 0
+                elif block_found:
+                    hole_streak += 1
+                    
+            # Add remaining holes in streak
+            if hole_streak > 0:
+                holes += hole_streak * 1.5
+                
+        return holes
