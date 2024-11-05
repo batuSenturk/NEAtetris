@@ -436,12 +436,12 @@ class Game:
             self.screen.fill(COLORS['background'])
             self.grid.draw(self.screen)
             self.hud.draw(self.screen)
-            self.particle_system.draw(self.screen)  # Add particle drawing
+            self.particle_system.draw(self.screen)
         elif self.current_screen == 'countdown':
             self.screen.fill(COLORS['background'])
             self.grid.draw(self.screen)
             self.hud.draw(self.screen)
-            self.particle_system.draw(self.screen)  # Add particle drawing
+            self.particle_system.draw(self.screen)
             self.draw_countdown()
         elif self.current_screen == 'game':
             self.screen.fill(COLORS['background'])
@@ -450,7 +450,7 @@ class Game:
                 self.draw_ghost_piece()
                 self.current_piece.draw(self.screen)
             self.hud.draw(self.screen)
-            self.particle_system.draw(self.screen)  # Make sure particles are drawn
+            self.particle_system.draw(self.screen)
             if self.is_paused:
                 self.draw_pause_overlay()
                 self.back_button.draw(self.screen)

@@ -111,7 +111,7 @@ class TetrisAI:
 
         print("\nBoard State:")
         for row in state['board']:
-            print(''.join(['█' if cell else '.' for cell in row]))
+            print(''.join(['█' if cell == 1 else '#' if cell == 2 or (cell == 0 and self.calculate_covered_holes(state['board']) > 0) else '.' for cell in row]))
 
         # Calculate and print heuristics for current board state
         heuristics = self.calculate_heuristics(state['board'])
