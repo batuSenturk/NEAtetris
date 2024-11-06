@@ -111,7 +111,11 @@ class TetrisAI:
 
         print("\nBoard State:")
         for row in state['board']:
-            print(''.join(['█' if cell == 1 else '#' if cell == 2 or (cell == 0 and self.calculate_covered_holes(state['board']) > 0) else '.' for cell in row]))
+            print(''.join(['█' if cell == 1 else '.' for cell in row]))
+        
+        # Calculate and print covered holes
+        covered_holes = self.calculate_covered_holes(state['board'])
+        print(f"Covered Holes: {covered_holes}")
 
         # Calculate and print heuristics for current board state
         heuristics = self.calculate_heuristics(state['board'])
@@ -291,14 +295,15 @@ class TetrisAI:
         width = len(board_state[0])
         covered_holes = 0
         
-        for col in range(width):
-            blocks_above = 0
-            for row in range(height):
-                if board_state[row][col]:
-                    blocks_above += 1
-                elif blocks_above > 0:  # There's a hole with blocks above
-                    covered_holes += blocks_above
-        
+        for row in range(height):  # Iterate over each row
+            for col in range(width):  # Check each column in the row
+                if board_state[row][col] == 0:  # If the cell is empty
+                    # Check if there are blocks above this empty cell
+                    for above_row in range(row):
+                        if board_state[above_row][col]:  # If there's a block above
+                            covered_holes += 1  # Count this as a covered hole
+                            break  # Stop checking above once we find a block
+                        
         return covered_holes
 
     def calculate_well_depth(self, board_state):
