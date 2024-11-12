@@ -1,32 +1,8 @@
 # tetromino.py
 
 import pygame
-from constants import COLORS, ANIMATION_SPEED, MAX_LOCK_MOVES
+from constants import COLORS, ANIMATION_SPEED, MAX_LOCK_MOVES, SHAPES
 import copy
-
-SHAPES = {
-    'I': [[0, 0, 0, 0],
-          [1, 1, 1, 1],
-          [0, 0, 0, 0],
-          [0, 0, 0, 0]],
-    'O': [[1, 1],
-          [1, 1]],
-    'T': [[0, 1, 0],
-          [1, 1, 1],
-          [0, 0, 0]],
-    'S': [[0, 1, 1],
-          [1, 1, 0],
-          [0, 0, 0]],
-    'Z': [[1, 1, 0],
-          [0, 1, 1],
-          [0, 0, 0]],
-    'J': [[1, 0, 0],
-          [1, 1, 1],
-          [0, 0, 0]],
-    'L': [[0, 0, 1],
-          [1, 1, 1],
-          [0, 0, 0]],
-}
 
 # Wall kick data (SRS)
 WALL_KICK_DATA = {
