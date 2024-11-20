@@ -295,7 +295,7 @@ class TetrisAI:
         width = len(board_state[0])
         covered_holes = 0
         
-        for row in range(height):  # Iterate over each row
+        for row in range(height):
             for col in range(width):  # Check each column in the row
                 if board_state[row][col] == 0:  # If the cell is empty
                     # Check if there are blocks above this empty cell
