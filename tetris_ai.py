@@ -296,13 +296,13 @@ class TetrisAI:
         covered_holes = 0
         
         for row in range(height):
-            for col in range(width):  # Check each column in the row
-                if board_state[row][col] == 0:  # If the cell is empty
+            for col in range(width):
+                if board_state[row][col] == 0:
                     # Check if there are blocks above this empty cell
                     for above_row in range(row):
-                        if board_state[above_row][col]:  # If there's a block above
-                            covered_holes += 1  # Count this as a covered hole
-                            break  # Stop checking above once we find a block
+                        if board_state[above_row][col]:
+                            covered_holes += 1
+                            break
                         
         return covered_holes
 
