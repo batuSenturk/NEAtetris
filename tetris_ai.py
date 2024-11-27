@@ -352,7 +352,7 @@ class TetrisAI:
                 elif block_found:
                     holes.add((row, col))
         
-        # Count blocks that make holes harder to fill
+        # Count blocks that make holes harder to fill 
         for hole_row, hole_col in holes:
             for row in range(hole_row):
                 if board_state[row][hole_col]:
@@ -391,7 +391,7 @@ class TetrisAI:
                 if board_state[row][col]:
                     block_found = True
                     if hole_streak > 0:
-                        # Add penalty for consecutive holes
+                        # Add penalty for consecutive holes 
                         holes += hole_streak * 1.5
                     hole_streak = 0
                 elif block_found:
