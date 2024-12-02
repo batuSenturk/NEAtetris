@@ -176,6 +176,7 @@ class Tetromino:
 
     def draw(self, screen):
         for x, y in self.get_block_positions():
+            print(x, y)
             if y >= 0:
                 rect = pygame.Rect(
                     int(self.visual_x + (x - self.x) * self.grid.cell_size),
