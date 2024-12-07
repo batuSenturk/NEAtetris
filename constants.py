@@ -76,6 +76,36 @@ WALL_KICK_DATA = {
     },
 }
 
+# Rotation matrices for different piece types
+ROTATION_MATRICES = {
+    'JLSTZ': {
+        'clockwise': [
+            [0, 1, 0],
+            [0, 0, 1],
+            [1, 0, 0]
+        ],
+        'counterclockwise': [
+            [0, 0, 1],
+            [1, 0, 0],
+            [0, 1, 0]
+        ]
+    },
+    'I': {
+        'clockwise': [
+            [0, 0, 0, 1],
+            [0, 0, 1, 0],
+            [0, 1, 0, 0],
+            [1, 0, 0, 0]
+        ],
+        'counterclockwise': [
+            [0, 0, 0, 1],
+            [0, 0, 1, 0],
+            [0, 1, 0, 0],
+            [1, 0, 0, 0]
+        ]
+    }
+}
+
 # Drop speed (milliseconds per drop)
 INITIAL_DROP_SPEED = 500
 MIN_DROP_SPEED = 100

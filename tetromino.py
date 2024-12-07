@@ -1,7 +1,8 @@
 # tetromino.py
 
 import pygame
-from constants import COLORS, ANIMATION_SPEED, MAX_LOCK_MOVES, SHAPES, WALL_KICK_DATA
+import numpy as np
+from constants import COLORS, ANIMATION_SPEED, MAX_LOCK_MOVES, SHAPES, WALL_KICK_DATA, ROTATION_MATRICES
 import copy
 
 class Tetromino:
@@ -53,21 +54,27 @@ class Tetromino:
 
     def rotate(self, clockwise=True, use_wall_kicks=True):
         """Rotate the piece with optional wall kick handling"""
+        if self.shape_name == 'O':  # O piece doesn't rotate
+            return False
+            
         # Store original state
         original_shape = [row[:] for row in self.shape]
         original_x = self.x
         original_y = self.y
         original_rotation_state = self.rotation_state
 
-        # Perform rotation
-        if clockwise:
-            self.shape = [list(row) for row in zip(*self.shape[::-1])]
-            self.rotation_state = (self.rotation_state + 1) % 4
-        else:
-            self.shape = [list(row) for row in zip(*[row[::-1] for row in self.shape])]
-            self.rotation_state = (self.rotation_state - 1) % 4
+        # Get the appropriate rotation matrix
+        matrix_key = 'I' if self.shape_name == 'I' else 'JLSTZ'
+        rotation_type = 'clockwise' if clockwise else 'counterclockwise'
+        rotation_matrix = np.array(ROTATION_MATRICES[matrix_key][rotation_type])
 
-        new_rotation_state = self.rotation_state  # Get the new rotation state
+        # Convert shape to numpy array and rotate using matrix multiplication
+        shape_array = np.array(self.shape)
+        self.shape = np.dot(shape_array, rotation_matrix).tolist()
+        
+        # Update rotation state
+        self.rotation_state = (self.rotation_state + (1 if clockwise else -1)) % 4
+        new_rotation_state = self.rotation_state
 
         # First, try the basic rotation
         if not self.grid.is_collision(self):

@@ -1,5 +1,9 @@
 [
     {
+        "name": "sgeveb",
+        "score": 1242600
+    },
+    {
         "name": "Marla",
         "score": 713963
     },
@@ -14,9 +18,5 @@
     {
         "name": "Durden",
         "score": 116269
-    },
-    {
-        "name": "Narrator",
-        "score": 87681
     }
 ]
