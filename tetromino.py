@@ -1,14 +1,13 @@
 # tetromino.py
 
 import pygame
-import numpy as np
-from constants import COLORS, ANIMATION_SPEED, MAX_LOCK_MOVES, SHAPES, WALL_KICK_DATA, ROTATION_MATRICES
+from constants import COLORS, ANIMATION_SPEED, MAX_LOCK_MOVES, SHAPES, WALL_KICK_DATA
 import copy
 
 class Tetromino:
     def __init__(self, shape_name, grid):
         self.shape_name = shape_name
-        self.shape = SHAPES[shape_name]
+        self.shape = [row[:] for row in SHAPES[shape_name]]  # Make a deep copy of the initial shape
         self.color = COLORS[shape_name]
         self.grid = grid
         self.reset_position()
@@ -54,26 +53,22 @@ class Tetromino:
 
     def rotate(self, clockwise=True, use_wall_kicks=True):
         """Rotate the piece with optional wall kick handling"""
-        if self.shape_name == 'O':  # O piece doesn't rotate
-            return False
-            
         # Store original state
         original_shape = [row[:] for row in self.shape]
         original_x = self.x
         original_y = self.y
         original_rotation_state = self.rotation_state
 
-        # Get the appropriate rotation matrix
-        matrix_key = 'I' if self.shape_name == 'I' else 'JLSTZ'
-        rotation_type = 'clockwise' if clockwise else 'counterclockwise'
-        rotation_matrix = np.array(ROTATION_MATRICES[matrix_key][rotation_type])
+        # Perform rotation using zip
+        if clockwise:
+            # Rotate clockwise: zip and reverse rows
+            self.shape = [list(row) for row in zip(*self.shape[::-1])]
+            self.rotation_state = (self.rotation_state + 1) % 4
+        else:
+            # Rotate counter-clockwise: reverse columns and zip
+            self.shape = [list(row) for row in zip(*self.shape)][::-1]
+            self.rotation_state = (self.rotation_state - 1) % 4
 
-        # Convert shape to numpy array and rotate using matrix multiplication
-        shape_array = np.array(self.shape)
-        self.shape = np.dot(shape_array, rotation_matrix).tolist()
-        
-        # Update rotation state
-        self.rotation_state = (self.rotation_state + (1 if clockwise else -1)) % 4
         new_rotation_state = self.rotation_state
 
         # First, try the basic rotation
@@ -192,3 +187,54 @@ class Tetromino:
                 )
                 pygame.draw.rect(screen, self.color, rect)
                 pygame.draw.rect(screen, COLORS['white'], rect, 1)
+
+def multiply_matrices(A, B):
+    """
+    Multiply two n x n matrices A and B and return the resulting matrix AB.
+
+    Parameters:
+    A (list of lists): The first matrix to multiply.
+    B (list of lists): The second matrix to multiply.
+
+    Returns:
+    list of lists: The product matrix AB.
+    """
+
+    n = len(A)  # Size of the matrices
+
+    # Initialize the result matrix with zeros
+    result = [[0 for _ in range(n)] for _ in range(n)]
+
+    # Perform matrix multiplication
+    for i in range(n):
+        for j in range(n):
+            for k in range(n):
+                result[i][j] += A[i][k] * B[k][j]
+            # Debug statement to trace computation
+            # print(f"result[{i}][{j}] = {result[i][j]}")
+    
+    return result
+
+if __name__ == "__main__":
+    # Test the multiply_matrices function
+
+    A = [[0, 0, 1], 
+         [0, 0, 0],
+         [0, 0, 0]]
+        
+    B = [[1, 2, 3], 
+         [4, 5, 6],
+         [7, 8, 9]]
+    
+    result = multiply_matrices(A, B)
+    print("Matrix A:")
+    for row in A:
+        print(row)
+    
+    print("\nMatrix B:")
+    for row in B:
+        print(row)
+    
+    print("\nResult of A * B:")
+    for row in result:
+        print(row)
