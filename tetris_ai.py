@@ -12,7 +12,7 @@ class TetrisAI:
             'aggregate_height': -2,
             'maximum_height': -2,
             'surface_variance': -1,
-            'covered_holes': -4,
+            'covered_holes': -3,
         }
 
     def get_state_representation(self):
@@ -106,56 +106,6 @@ class TetrisAI:
                     possible_moves.append(move)
 
         return possible_moves
-
-    def print_debug_info(self):
-        """Print debug information about the current state and possible moves"""
-        print("\n=== Current State ===")
-        state = self.get_state_representation()
-        print(f"Current Piece: {state['current_piece']['shape']}")
-        print(f"Position: ({state['current_piece']['x']}, {state['current_piece']['y']})")
-        print(f"Rotation: {state['current_piece']['rotation']}")
-        print(f"Next Piece: {state['next_piece']}")
-
-        print("\nBoard State:")
-        for row in state['board']:
-            print(''.join(['█' if cell == 1 else '.' for cell in row]))
-        
-        # Calculate and print heuristics for current board state
-        heuristics = self.calculate_heuristics(state['board'])
-        print("\n=== Current Heuristics ===")
-        for key, value in heuristics.items():
-            print(f"{key}: {value}")
-
-        print("\n=== Possible Moves ===")
-        moves = self.generate_possible_moves()
-        print(f"Total possible moves: {len(moves)}")
-
-        # Get and print the best move
-        best_move = self.get_best_move()
-        if best_move:
-            print("\n=== Best Move ===")
-            print(f"Rotation: {best_move['rotation']}")
-            print(f"Position: ({best_move['x']}, {best_move['y']})")
-            print(f"Type: {best_move['type']}")
-            print(f"Score: {best_move['score']}")
-
-            # Only simulate and print if the move is valid
-            resulting_board = self.simulate_placement(
-                self.game.current_piece.shape_name,
-                best_move['rotation'],
-                best_move['x']
-            )
-            if resulting_board is not None:
-                print(f"Predicted Score: {self.evaluate_position(resulting_board)}")
-            else:
-                print("Warning: Could not simulate best move")
-
-        # Print first few moves for reference
-        print("\n=== Sample Moves ===")
-        for i, move in enumerate(moves[:5]):
-            print(f"Move {i + 1}: Rotation={move['rotation']}, X={move['x']}, Y={move['y']}, Type={move['type']}, Score={move['score']}")
-        if len(moves) > 5:
-            print("... more moves available ...")
 
     def calculate_heuristics(self, board_state):
         """Calculate all heuristics for a given board state"""

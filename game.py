@@ -321,11 +321,6 @@ class Game:
                         # Hard drop instead of gradual drop
                         self.hard_drop_count = self.current_piece.hard_drop()
 
-                    # Print debug info periodically
-                    if current_time - self.ai_debug_timer > self.ai_debug_interval:
-                        self.ai.print_debug_info()
-                        self.ai_debug_timer = current_time
-
                 # Store the current last_move_was_rotation state before any automatic movements
                 was_rotation = self.last_move_was_rotation
 
