@@ -14,6 +14,8 @@ class TetrisAI:
             'surface_variance': -1,
             'covered_holes': -3,
         }
+        self.first_held_piece = True  # Flag to track if this is the first piece
+        self.hold_threshold = -15  # Threshold for holding the first piece
 
     def get_state_representation(self):
         """Get the current state of the game"""
@@ -75,35 +77,44 @@ class TetrisAI:
             return None
 
     def generate_possible_moves(self):
-        """Generate all possible moves for the current piece"""
+        """Generate all possible moves for the current piece and held piece if available"""
         if not self.game.current_piece:
             return []
 
         possible_moves = []
-        piece_shape = self.game.current_piece.shape_name
+        pieces_to_try = [(self.game.current_piece.shape_name, False)]  # (shape_name, requires_hold)
+        
+        # Add held piece to possibilities if it exists and holding is allowed
+        if self.game.held_piece and self.game.can_hold:
+            pieces_to_try.append((self.game.held_piece.shape_name, True))
+
         board_width = self.game.grid.width
 
-        # Try all rotations (0 to 3)
-        for rotation in range(4):
-            # Try all horizontal positions
-            for x in range(-2, board_width + 2):  # Include some buffer for rotations
-                # Simulate the placement
-                resulting_board = self.simulate_placement(piece_shape, rotation, x)
-                
-                if resulting_board is not None:
-                    # Create move object
-                    move = {
-                        'rotation': rotation,
-                        'x': x,
-                        'y': None,  # Will be set when executing the move
-                        'type': 'normal'
-                    }
+        # Try moves for both current piece and held piece
+        for piece_shape, requires_hold in pieces_to_try:
+            # Try all rotations (0 to 3)
+            for rotation in range(4):
+                # Try all horizontal positions
+                for x in range(-2, board_width + 2):  # Include some buffer for rotations
+                    # Simulate the placement
+                    resulting_board = self.simulate_placement(piece_shape, rotation, x)
                     
-                    # Calculate score for this move
-                    score = self.evaluate_position(resulting_board)
-                    move['score'] = score
-                    
-                    possible_moves.append(move)
+                    if resulting_board is not None:
+                        # Create move object
+                        move = {
+                            'rotation': rotation,
+                            'x': x,
+                            'y': None,  # Will be set when executing the move
+                            'requires_hold': requires_hold,
+                            'shape': piece_shape,
+                            'type': 'normal'
+                        }
+                        
+                        # Calculate score for this move
+                        score = self.evaluate_position(resulting_board)
+                        move['score'] = score
+                        
+                        possible_moves.append(move)
 
         return possible_moves
 
@@ -174,12 +185,26 @@ class TetrisAI:
         
         if not possible_moves:
             return None
-            
+        
         # Sort moves by score and return the best one
         best_move = max(possible_moves, key=lambda x: x['score'])
         
+        # Check if we should hold the first piece
+        if self.first_held_piece and best_move['score'] < self.hold_threshold and self.game.can_hold:
+            self.first_held_piece = False  # Disable this check for future pieces
+            best_move = {
+                'rotation': 0,
+                'x': 0,
+                'y': 0,
+                'requires_hold': True,
+                'shape': self.game.current_piece.shape_name,
+                'score': best_move['score'],
+                'type': 'normal'
+            }
+            return best_move
+        
         # Find the actual landing y position for the best move
-        test_piece = Tetromino(self.game.current_piece.shape_name, self.game.grid)
+        test_piece = Tetromino(best_move['shape'], self.game.grid)
         
         # Apply rotation
         for _ in range(best_move['rotation']):

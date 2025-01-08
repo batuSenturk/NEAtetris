@@ -119,6 +119,12 @@ class Game:
         self.countdown_timer = None  # Will be set after transition
         self.held_piece = None
         self.can_hold = True
+        
+        # Reset AI's first piece flag
+        self.ai.first_held_piece = True
+        
+        # Clear all particles
+        self.particle_system = ParticleSystem()
 
     def return_to_menu(self, game=None):
         """Return to the main menu."""
@@ -300,6 +306,10 @@ class Game:
                     # Get and execute AI moves
                     best_move = self.ai.get_best_move()
                     if best_move:
+                        # Check if we need to hold the piece first
+                        if best_move['requires_hold'] and self.can_hold:
+                            self.hold_piece()
+                            
                         # Execute rotation with safety check
                         target_rotation = best_move['rotation']
                         max_rotation_attempts = 4

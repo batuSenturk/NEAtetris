@@ -3,7 +3,7 @@
 import pygame
 
 # Screen dimensions
-SCREEN_WIDTH = 800
+SCREEN_WIDTH = 1600
 SCREEN_HEIGHT = 800
 
 # Grid dimensions

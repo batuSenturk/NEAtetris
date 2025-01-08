@@ -63,7 +63,7 @@ class HUD:
         # Draw notifications
         for idx, notif in enumerate(self.notifications):
             text_surface = self.small_font.render(notif['text'], True, notif['color'])
-            text_rect = text_surface.get_rect(center=(SCREEN_WIDTH - 200, GRID_Y_OFFSET + 300 + idx * 30))
+            text_rect = text_surface.get_rect(center=(HOLD_X_OFFSET + 50, GRID_Y_OFFSET + 300 + idx * 30))
             screen.blit(text_surface, text_rect)
 
         # Display hold piece text
