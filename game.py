@@ -318,7 +318,7 @@ class Game:
                             if not self.current_piece.move(-1, 0):
                                 break
                         
-                        # Hard drop instead of gradual drop
+                        # Hard drop
                         self.hard_drop_count = self.current_piece.hard_drop()
 
                 # Store the current last_move_was_rotation state before any automatic movements

@@ -26,15 +26,6 @@ class Grid:
             if y >= 0:
                 self.cells[y][x] = piece.color
 
-        # Output the grid representation to the terminal
-        self.print_grid()
-
-    def print_grid(self):
-        """Print the grid representation to the terminal."""
-        for row in self.cells:
-            print(' '.join(f"{cell}" if cell != 0 else "0" for cell in row))
-        print()  # Add a newline for better readability
-
     def clear_lines(self):
         self.lines_to_clear = []
         for y in range(self.height - 1, -1, -1):
