@@ -318,9 +318,8 @@ class Game:
                             if not self.current_piece.move(-1, 0):
                                 break
                         
-                        # Execute vertical movement (faster drop)
-                        if self.current_piece.y < best_move['y']:
-                            self.current_piece.move(0, 1)
+                        # Hard drop instead of gradual drop
+                        self.hard_drop_count = self.current_piece.hard_drop()
 
                     # Print debug info periodically
                     if current_time - self.ai_debug_timer > self.ai_debug_interval:
