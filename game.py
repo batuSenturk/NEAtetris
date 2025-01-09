@@ -33,6 +33,7 @@ class Game:
         self.mode = 'Classic Mode'  # Default game mode
         self.grid = None
         self.piece_generator = None
+        self.ai_piece_generator = None  # Separate piece generator for AI
         self.current_piece = None
         self.next_pieces = None
         self.score = None
@@ -59,6 +60,11 @@ class Game:
         self.ai = TetrisAI(self)
         self.ai_debug_timer = 0
         self.ai_debug_interval = 1000  # Print debug info every 1000ms
+        self.ai_grid = None
+        self.ai_score = None
+        self.ai_current_piece = None
+        self.ai_next_pieces = None
+        self.ai_held_piece = None
 
         # Back button when game is paused
         self.back_button = Button(
@@ -103,11 +109,27 @@ class Game:
         self.last_movement_time = 0
 
     def start_new_game(self, game=None):
-        # Initialize or reset game variables
-        self.grid = Grid(10, 20)
-        self.piece_generator = PieceGenerator(self.grid)
-        self.current_piece = None  # Set to None initially
-        self.next_pieces = self.piece_generator.preview_next_pieces()  # Get list of next pieces
+        if self.mode == "AI":
+            # Player grid and pieces on the left
+            self.grid = Grid(10, 20, 'left')
+            self.piece_generator = PieceGenerator(self.grid)
+            self.current_piece = None
+            self.next_pieces = self.piece_generator.preview_next_pieces()
+            
+            # AI grid and pieces on the right
+            self.ai_grid = Grid(10, 20, 'right')
+            self.ai_piece_generator = PieceGenerator(self.ai_grid)  # Separate generator for AI
+            self.ai_current_piece = None
+            self.ai_next_pieces = self.ai_piece_generator.preview_next_pieces()
+            self.ai_score = Score()
+            self.ai_held_piece = None
+        else:
+            # Single centered grid for other modes
+            self.grid = Grid(10, 20, 'center')
+            self.piece_generator = PieceGenerator(self.grid)
+            self.current_piece = None
+            self.next_pieces = self.piece_generator.preview_next_pieces()
+        
         self.score = Score()
         self.hud = HUD(self)
         self.is_paused = False
@@ -303,33 +325,98 @@ class Game:
 
                 # AI Mode handling
                 if self.mode == "AI" and not self.is_paused:
+                    if self.ai_current_piece is None:
+                        self.ai_current_piece = self.ai_piece_generator.get_next_piece()
+                        self.ai_current_piece.grid = self.ai_grid
+                        self.ai_next_pieces = self.ai_piece_generator.preview_next_pieces()
+                    
                     # Get and execute AI moves
-                    best_move = self.ai.get_best_move()
+                    best_move = self.ai.get_best_move(self.ai_grid, self.ai_current_piece)
                     if best_move:
-                        # Check if we need to hold the piece first
-                        if best_move['requires_hold'] and self.can_hold:
-                            self.hold_piece()
-                            
-                        # Execute rotation with safety check
+                        # Handle piece holding for AI
+                        if best_move['requires_hold']:
+                            if self.ai_held_piece is None:
+                                # First hold
+                                self.ai_held_piece = Tetromino(self.ai_current_piece.shape_name, self.ai_grid)
+                                self.ai_current_piece = self.ai_piece_generator.get_next_piece()
+                                self.ai_next_pieces = self.ai_piece_generator.preview_next_pieces()
+                            else:
+                                # Swap current and held pieces
+                                temp_shape_name = self.ai_current_piece.shape_name
+                                self.ai_current_piece = Tetromino(self.ai_held_piece.shape_name, self.ai_grid)
+                                self.ai_current_piece.reset_position()  # Reset position of the swapped piece
+                                self.ai_held_piece = Tetromino(temp_shape_name, self.ai_grid)
+                            return  # Skip the rest of the move execution for this frame
+
+                        # Execute rotation
                         target_rotation = best_move['rotation']
                         max_rotation_attempts = 4
-                        
-                        while (self.current_piece.rotation_state != target_rotation and 
+                        while (self.ai_current_piece.rotation_state != target_rotation and 
                                max_rotation_attempts > 0):
-                            if not self.current_piece.rotate():
-                                break  # Stop if rotation fails
+                            if not self.ai_current_piece.rotate():
+                                break
                             max_rotation_attempts -= 1
                         
                         # Execute horizontal movement
-                        while self.current_piece.x < best_move['x']:
-                            if not self.current_piece.move(1, 0):
+                        while self.ai_current_piece.x < best_move['x']:
+                            if not self.ai_current_piece.move(1, 0):
                                 break
-                        while self.current_piece.x > best_move['x']:
-                            if not self.current_piece.move(-1, 0):
+                        while self.ai_current_piece.x > best_move['x']:
+                            if not self.ai_current_piece.move(-1, 0):
                                 break
                         
                         # Hard drop
-                        self.hard_drop_count = self.current_piece.hard_drop()
+                        drop_distance = self.ai_current_piece.hard_drop()
+                        
+                        # Lock piece
+                        self.ai_grid.lock_piece(self.ai_current_piece)
+                        
+                        # Clear lines and handle scoring
+                        lines_to_clear = []
+                        for y in range(self.ai_grid.height - 1, -1, -1):
+                            if all(self.ai_grid.cells[y][x] != 0 for x in range(self.ai_grid.width)):
+                                lines_to_clear.append(y)
+                        
+                        lines_cleared = len(lines_to_clear)
+                        if lines_cleared > 0:
+                            # Create particles before clearing the lines
+                            for y in lines_to_clear:
+                                for x in range(self.ai_grid.width):
+                                    if self.ai_grid.cells[y][x] != 0:
+                                        particle_x = self.ai_grid.x_offset + x * self.ai_grid.cell_size + self.ai_grid.cell_size // 2
+                                        particle_y = self.ai_grid.y_offset + y * self.ai_grid.cell_size + self.ai_grid.cell_size // 2
+                                        color = self.ai_grid.cells[y][x]
+                                        for _ in range(5):
+                                            self.particle_system.add_particle(particle_x, particle_y, color)
+                            
+                            # Clear the lines
+                            self.ai_grid.clear_lines()
+                            
+                            # Update AI score and get notifications
+                            turn_score, notifications = self.ai_score.update(
+                                lines_cleared,
+                                False,  # No T-spin for AI
+                                False,  # No back-to-back for AI
+                                drop_distance,
+                                0,  # No soft drop for AI
+                                drop_distance * 2  # Hard drop bonus
+                            )
+                            
+                            # Add notifications to HUD
+                            if notifications:
+                                self.hud.add_notifications(notifications)
+                            
+                            # Check for level up
+                            self.ai_score.update_level()
+                            
+                            # Check for board clear bonus
+                            if self.ai_grid.is_board_clear():
+                                tetris_clear_bonus = self.ai_score.add_tetris_clear_bonus()
+                        
+                        # Get next piece
+                        self.ai_current_piece = self.ai_piece_generator.get_next_piece()
+                        self.ai_current_piece.grid = self.ai_grid
+                        self.ai_next_pieces = self.ai_piece_generator.preview_next_pieces()
 
                 # Store the current last_move_was_rotation state before any automatic movements
                 was_rotation = self.last_move_was_rotation
@@ -439,20 +526,36 @@ class Game:
         elif self.current_screen == 'transition_to_game':
             self.screen.fill(COLORS['background'])
             self.grid.draw(self.screen)
+            # Draw AI grid in AI mode during transition
+            if self.mode == "AI":
+                self.ai_grid.draw(self.screen)
             self.hud.draw(self.screen)
             self.particle_system.draw(self.screen)
         elif self.current_screen == 'countdown':
             self.screen.fill(COLORS['background'])
             self.grid.draw(self.screen)
+            # Draw AI grid in AI mode during countdown
+            if self.mode == "AI":
+                self.ai_grid.draw(self.screen)
             self.hud.draw(self.screen)
             self.particle_system.draw(self.screen)
             self.draw_countdown()
         elif self.current_screen == 'game':
             self.screen.fill(COLORS['background'])
+            
+            # Draw main grid
             self.grid.draw(self.screen)
+            
+            # Draw AI grid in AI mode
+            if self.mode == "AI":
+                self.ai_grid.draw(self.screen)
+                if self.ai_current_piece:
+                    self.ai_current_piece.draw(self.screen)
+            
             if not self.game_over and self.current_piece:
                 self.draw_ghost_piece()
                 self.current_piece.draw(self.screen)
+            
             self.hud.draw(self.screen)
             self.particle_system.draw(self.screen)
             if self.is_paused:

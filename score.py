@@ -121,3 +121,31 @@ class Score:
         tetris_clear_bonus = 10000 * self.level
         self.score += tetris_clear_bonus
         return tetris_clear_bonus
+
+    def update_silent(self, lines_cleared, drop_distance):
+        """Update score without generating notifications"""
+        # Line clear scores
+        line_clear_scores = {
+            1: 100,   # Single
+            2: 300,   # Double
+            3: 500,   # Triple
+            4: 800    # Tetris
+        }
+        
+        # Calculate base score
+        turn_score = line_clear_scores.get(lines_cleared, 0)
+        
+        # Apply level multiplier
+        turn_score *= self.level
+        
+        # Add hard drop bonus
+        turn_score += drop_distance * 2
+        
+        # Update total score
+        self.score += turn_score
+        
+        # Update lines cleared
+        self.lines_cleared += lines_cleared
+        
+        # Update level
+        self.update_level()
