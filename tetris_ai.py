@@ -7,12 +7,12 @@ from tetromino import Tetromino, SHAPES
 class TetrisAI:
     def __init__(self, game):
         self.game = game
-        # Initialize weights for different heuristics
+        # Weights strongly penalize height and holes
         self.weights = {
-            'aggregate_height': -2,
-            'maximum_height': -2,
-            'surface_variance': -1,
-            'covered_holes': -3,
+            'aggregate_height': -4.5,    
+            'maximum_height': -3.5,      
+            'surface_variance': -2.0,    
+            'covered_holes': -7.5,       
         }
         self.first_held_piece = True  # Flag to track if this is the first piece
         self.hold_threshold = -15  # Threshold for holding the first piece
@@ -125,8 +125,8 @@ class TetrisAI:
                     heights[col] = height - row
                     break
 
-        # Aggregate Height
-        aggregate_height = sum(heights)
+        # Aggregate Height (with increased importance on higher stacks)
+        aggregate_height = sum(h * 1.2 for h in heights)  # Progressive penalty for height
 
         # Maximum Height
         maximum_height = max(heights) if heights else 0
@@ -151,20 +151,23 @@ class TetrisAI:
         return variance
 
     def calculate_covered_holes(self, board_state):
-        """Count holes that have blocks above them"""
+        """Count holes that have blocks above them with increased penalty for deep holes"""
         height = len(board_state)
         width = len(board_state[0])
         covered_holes = 0
         
-        for row in range(height):
-            for col in range(width):
-                if board_state[row][col] == 0:
-                    # Check if there are blocks above this empty cell
-                    for above_row in range(row):
-                        if board_state[above_row][col]:
-                            covered_holes += 1
-                            break
-                        
+        for col in range(width):
+            found_block = False
+            hole_depth = 0
+            
+            for row in range(height):
+                if board_state[row][col]:
+                    found_block = True
+                elif found_block:
+                    # Increase penalty for deeper holes
+                    hole_depth += 1
+                    covered_holes += hole_depth  # Progressive penalty
+
         return covered_holes
 
     def evaluate_position(self, board_state):

@@ -3,6 +3,7 @@
 import pygame
 from button import Button
 from constants import SCREEN_WIDTH, SCREEN_HEIGHT, MENU_BACKGROUND_COLOR, FONT_NAME, FONT_SIZE, BUTTON_WIDTH, BUTTON_HEIGHT
+from input_box import InputBox
 
 class Menu:
     def __init__(self, game):
@@ -47,14 +48,14 @@ class Menu:
         ]
 
         # AI screen buttons
-        self.watch_button = Button(
+        self.ai_button = Button(
             rect=(
                 SCREEN_WIDTH // 2 - BUTTON_WIDTH // 2,
                 SCREEN_HEIGHT // 2 + 100,
                 BUTTON_WIDTH,
                 BUTTON_HEIGHT
             ),
-            text="Watch",
+            text="Play",
             action=self.start_ai_game
         )
 
@@ -89,6 +90,15 @@ class Menu:
             action=self.show_high_scores
         )
 
+        # Add input box for AI move delay
+        self.ai_delay_input = InputBox(
+            SCREEN_WIDTH // 2 - 100,  # x position
+            420,  # y position
+            200,  # width
+            40,   # height
+            text=''  # default empty
+        )
+
     def select_mode(self, mode):
         self.selected_mode = mode
         self.state = 'rules'
@@ -113,16 +123,35 @@ class Menu:
         self.state = 'modes'
 
     def start_ai_game(self, game):
+        """Start AI game mode"""
+        # Get the delay value from input box, default to 0 if empty or invalid
+        try:
+            delay = int(self.ai_delay_input.text) if self.ai_delay_input.text else 0
+        except ValueError:
+            delay = 0
+            
+        game.ai_move_delay = delay
         game.mode = "AI"
         game.transition.start()
         game.current_screen = 'transition_to_game'
         game.start_new_game()
 
-    def handle_events(self):
-        for event in pygame.event.get():
+    def handle_events(self, events):
+        """Handle menu events"""
+        for event in events:
             if event.type == pygame.QUIT:
                 pygame.quit()
                 exit()
+            
+            # Handle input box events
+            if self.state == 'ai':
+                delay_input = self.ai_delay_input.handle_event(event)
+                if delay_input is not None:
+                    try:
+                        self.game.ai_move_delay = int(delay_input)
+                    except ValueError:
+                        self.game.ai_move_delay = 0
+
             # Handle events based on the current state
             if self.state == 'main':
                 for button in self.buttons:
@@ -132,8 +161,9 @@ class Menu:
                 self.play_button.handle_event(event, self.game)
                 self.back_button.handle_event(event, self.game)
             elif self.state == 'ai':
-                self.watch_button.handle_event(event, self.game)
+                self.ai_button.handle_event(event, self.game)
                 self.back_button.handle_event(event, self.game)
+                self.ai_button.handle_event(event, self.game)
             elif self.state == 'modes':
                 self.back_button.handle_event(event, self.game)
             elif self.state == 'high_scores':
@@ -154,8 +184,10 @@ class Menu:
             self.back_button.draw(screen)
         elif self.state == 'ai':
             self.draw_ai_screen(screen)
-            self.watch_button.draw(screen)
+            self.ai_button.draw(screen)
             self.back_button.draw(screen)
+            self.ai_button.draw(screen)
+            self.ai_delay_input.draw(screen)
         elif self.state == 'modes':
             self.draw_modes_screen(screen)
             self.back_button.draw(screen)
@@ -176,13 +208,15 @@ class Menu:
 
         # Draw description
         description_lines = [
-            "Watch an AI play Tetris!",
+            "Play against an AI in Tetris!",
             "",
-            "The AI will demonstrate advanced",
-            "techniques and strategies",
-            "for playing Tetris.",
+            "You can adjust the difficulty level",
+            "using the input box below.",
             "",
-            "Press 'Watch' to begin!"
+            "Enter the wanted time delay between",
+            "AI moves in milliseconds.",
+            "",
+            "Press 'Play' to begin!"
         ]
 
         y_offset = 250
@@ -252,4 +286,3 @@ class Menu:
 
         # Draw back button
         self.back_button.draw(screen)
-
