@@ -112,7 +112,7 @@ LOCK_DELAY = 500  # 500ms = 0.5 seconds
 MAX_LOCK_MOVES = 10  # Maximum number of moves before forcing lock
 
 # After GRID_Y_OFFSET
-HOLD_X_OFFSET = 50  # X position for hold piece display
+HOLD_X_OFFSET = 500  # X position for hold piece display
 HOLD_Y_OFFSET = 100  # Y position for hold piece display
 
 # In the scoring section, add:

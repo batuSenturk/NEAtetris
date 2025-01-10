@@ -415,7 +415,7 @@ class Game:
                                     
                                     # Add notifications to HUD
                                     if notifications:
-                                        self.hud.add_notifications(notifications)
+                                        self.hud.add_notifications(notifications, is_ai=True)
                                     
                                     # Check for level up
                                     self.ai_score.update_level()
@@ -482,7 +482,7 @@ class Game:
                     
                     # Add notifications to HUD
                     if notifications:
-                        self.hud.add_notifications(notifications)
+                        self.hud.add_notifications(notifications, is_ai=False)
                     
                     # Only reset flags after all scoring is done
                     self.drop_height = 0

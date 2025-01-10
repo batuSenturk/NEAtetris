@@ -8,24 +8,50 @@ class HUD:
         self.game = game
         self.font = pygame.font.Font(FONT_NAME, FONT_SIZE)
         self.small_font = pygame.font.Font(FONT_NAME, FONT_SIZE - 8)
-        self.notifications = []  # List of active notifications
+        self.player_notifications = []  # List of active player notifications
+        self.ai_notifications = []  # List of active AI notifications
+        self.notifications = []  # For classic mode
 
-    def add_notifications(self, new_notifications):
-        # Add new notifications to the list
-        for notif in new_notifications:
-            self.notifications.append({
-                'text': notif['text'],
-                'color': notif['color'],
-                'lifetime': notif['lifetime'],
-                'y_pos': 150  # Starting y position
-            })
+    def add_notifications(self, new_notifications, is_ai=False):
+        if self.game.mode == "AI":
+            # Add new notifications to the appropriate list in AI mode
+            target_list = self.ai_notifications if is_ai else self.player_notifications
+            for notif in new_notifications:
+                target_list.append({
+                    'text': notif['text'],
+                    'color': notif['color'],
+                    'lifetime': notif['lifetime'],
+                    'y_pos': 150  # Starting y position
+                })
+        else:
+            # Add to single list in classic mode
+            for notif in new_notifications:
+                self.notifications.append({
+                    'text': notif['text'],
+                    'color': notif['color'],
+                    'lifetime': notif['lifetime'],
+                    'y_pos': 150  # Starting y position
+                })
 
     def update(self):
-        # Update notifications
-        for notif in self.notifications[:]:
-            notif['lifetime'] -= 1
-            if notif['lifetime'] <= 0:
-                self.notifications.remove(notif)
+        if self.game.mode == "AI":
+            # Update player notifications
+            for notif in self.player_notifications[:]:
+                notif['lifetime'] -= 1
+                if notif['lifetime'] <= 0:
+                    self.player_notifications.remove(notif)
+            
+            # Update AI notifications
+            for notif in self.ai_notifications[:]:
+                notif['lifetime'] -= 1
+                if notif['lifetime'] <= 0:
+                    self.ai_notifications.remove(notif)
+        else:
+            # Update classic mode notifications
+            for notif in self.notifications[:]:
+                notif['lifetime'] -= 1
+                if notif['lifetime'] <= 0:
+                    self.notifications.remove(notif)
 
     def draw(self, screen):
         if self.game.mode == "AI":
@@ -58,17 +84,17 @@ class HUD:
         if self.game.next_pieces:
             self.draw_next_pieces(screen, self.game.next_pieces, hud_x)
 
-        # Draw notifications (only for player)
-        for idx, notif in enumerate(self.notifications):
-            text_surface = self.small_font.render(notif['text'], True, notif['color'])
-            text_rect = text_surface.get_rect(center=(hud_x + 100, GRID_Y_OFFSET + 300 + idx * 30))
-            screen.blit(text_surface, text_rect)
-
         # Draw player's hold piece on the left
         hold_text = self.font.render("Hold:", True, COLORS['white'])
         screen.blit(hold_text, (hold_x, HOLD_Y_OFFSET))
         if self.game.held_piece:
             self.draw_hold_piece(screen, hold_x)
+
+        # Draw player notifications under the hold piece
+        for idx, notif in enumerate(self.player_notifications):
+            text_surface = self.small_font.render(notif['text'], True, notif['color'])
+            text_rect = text_surface.get_rect(center=(hold_x + 60, HOLD_Y_OFFSET + 150 + idx * 30))
+            screen.blit(text_surface, text_rect)
 
     def draw_ai_hud(self, screen):
         # Calculate positions
@@ -97,24 +123,30 @@ class HUD:
         if self.game.ai_held_piece:
             self.draw_hold_piece(screen, hold_x, is_ai=True)
 
+        # Draw AI notifications under the hold piece
+        for idx, notif in enumerate(self.ai_notifications):
+            text_surface = self.small_font.render(notif['text'], True, notif['color'])
+            text_rect = text_surface.get_rect(center=(hold_x + 60, HOLD_Y_OFFSET + 150 + idx * 30))
+            screen.blit(text_surface, text_rect)
+
     def draw_centered_hud(self, screen):
         # Original HUD drawing for non-AI modes
         score_text = self.font.render(f"Score: {self.game.score.score}", True, COLORS['white'])
-        screen.blit(score_text, (500, GRID_Y_OFFSET))
+        screen.blit(score_text, (1000, GRID_Y_OFFSET))
         
         level_text = self.font.render(f"Level: {self.game.score.level}", True, COLORS['white'])
-        screen.blit(level_text, (500, GRID_Y_OFFSET + 50))
+        screen.blit(level_text, (1000, GRID_Y_OFFSET + 50))
         
         next_text = self.font.render("Next:", True, COLORS['white'])
-        screen.blit(next_text, (500, GRID_Y_OFFSET + 100))
+        screen.blit(next_text, (1000, GRID_Y_OFFSET + 100))
 
         # Draw next pieces
-        self.draw_next_pieces(screen, self.game.next_pieces, 500)
+        self.draw_next_pieces(screen, self.game.next_pieces, 1000)
 
         # Draw notifications
         for idx, notif in enumerate(self.notifications):
             text_surface = self.small_font.render(notif['text'], True, notif['color'])
-            text_rect = text_surface.get_rect(center=(HOLD_X_OFFSET + 50, GRID_Y_OFFSET + 300 + idx * 30))
+            text_rect = text_surface.get_rect(center=(HOLD_X_OFFSET + 50, HOLD_Y_OFFSET + 150 + idx * 30))
             screen.blit(text_surface, text_rect)
 
         # Draw hold piece
