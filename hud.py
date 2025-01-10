@@ -143,6 +143,10 @@ class HUD:
         # Draw next pieces
         self.draw_next_pieces(screen, self.game.next_pieces, 1000)
 
+        # Draw hold text and piece
+        hold_text = self.font.render("Hold:", True, COLORS['white'])
+        screen.blit(hold_text, (HOLD_X_OFFSET, HOLD_Y_OFFSET))
+
         # Draw notifications
         for idx, notif in enumerate(self.notifications):
             text_surface = self.small_font.render(notif['text'], True, notif['color'])

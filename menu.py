@@ -201,13 +201,10 @@ class Menu:
         screen.blit(title, title_rect)
 
     def draw_ai_screen(self, screen):
-        # Draw title
-        title = self.title_font.render("AI Mode", True, (255, 255, 255))
-        title_rect = title.get_rect(center=(SCREEN_WIDTH // 2, 150))
-        screen.blit(title, title_rect)
 
         # Draw description
         description_lines = [
+            "AI Mode:",
             "Play against an AI in Tetris!",
             "",
             "You can adjust the difficulty level",
@@ -219,12 +216,12 @@ class Menu:
             "Press 'Play' to begin!"
         ]
 
-        y_offset = 250
+        y_offset = 50  # Move this higher up
         for line in description_lines:
             text = self.font.render(line, True, (255, 255, 255))
             rect = text.get_rect(center=(SCREEN_WIDTH // 2, y_offset))
             screen.blit(text, rect)
-            y_offset += 40
+            y_offset += 30
 
     def update(self):
         mouse_pos = pygame.mouse.get_pos()
@@ -241,9 +238,9 @@ class Menu:
 
     def draw_rules(self, screen):
         # Update the rules text to include hold mechanic
+
         rules_text = [
-            f"Mode: {self.selected_mode}",
-            "",
+            f"{self.selected_mode} Rules:",
             "Controls:",
             "Left Arrow - Move Left",
             "Right Arrow - Move Right",
@@ -262,12 +259,12 @@ class Menu:
             "Clear lines by filling them completely.",
             "The game ends when the pieces reach the top."
         ]
-        y_offset = 150  # Start higher up
+        y_offset = 50
         for line in rules_text:
             text_surf = self.font.render(line, True, (255, 255, 255))
             text_rect = text_surf.get_rect(center=(SCREEN_WIDTH // 2, y_offset))
             screen.blit(text_surf, text_rect)
-            y_offset += 35  # Reduced vertical spacing
+            y_offset += 35
 
     def draw_high_scores(self, screen):
         # Display the high scores
