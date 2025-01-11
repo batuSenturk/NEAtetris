@@ -382,6 +382,16 @@ class Game:
                                 self.ai_current_piece.update_position()
                                 self.ai_grid.lock_piece(self.ai_current_piece)
                                 
+                                # Add hard drop score before line clearing
+                                turn_score, notifications = self.ai_score.update(
+                                    0,  # no lines cleared yet
+                                    False,  # no T-spin
+                                    False,  # no back-to-back
+                                    drop_distance,
+                                    0,  # no soft drop
+                                    drop_distance * 2  # hard drop bonus
+                                )
+                                
                                 # Handle line clearing and scoring
                                 lines_to_clear = []
                                 for y in range(self.ai_grid.height - 1, -1, -1):

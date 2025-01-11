@@ -25,6 +25,8 @@ COLORS = {
     'grid_line': (50, 50, 50),
     'background': (0, 0, 0),
     'white': (255, 255, 255),
+    'red': (255, 0, 0),
+    'green': (0, 255, 0),
 }
 
 # Shapes (2D Matrices)

@@ -59,6 +59,8 @@ class HUD:
             self.draw_player_hud(screen)
             # Draw AI HUD on the right
             self.draw_ai_hud(screen)
+            # Draw score difference in the middle top
+            self.draw_score_difference(screen)
         else:
             # Draw centered HUD for non-AI modes
             self.draw_centered_hud(screen)
@@ -195,3 +197,18 @@ class HUD:
                     )
                     pygame.draw.rect(screen, piece.color, rect)
                     pygame.draw.rect(screen, COLORS['white'], rect, 1)
+
+    def draw_score_difference(self, screen):
+        # Calculate score difference (player - AI)
+        score_diff = self.game.score.score - self.game.ai_score.score
+        
+        # Set color based on score difference
+        color = COLORS['green'] if score_diff > 0 else COLORS['red'] if score_diff < 0 else COLORS['white']
+        
+        # Format the score difference with a + sign if positive
+        diff_text = f"+{score_diff}" if score_diff > 0 else str(score_diff)
+        diff_surface = self.font.render(f"Score Difference: {diff_text}", True, color)
+        
+        # Position the text in the middle top of the screen
+        diff_rect = diff_surface.get_rect(center=(SCREEN_WIDTH // 2, 50))
+        screen.blit(diff_surface, diff_rect)

@@ -4,6 +4,10 @@
         "score": 468
     },
     {
+        "name": "bat",
+        "score": 220
+    },
+    {
         "name": "ai",
         "score": 10
     },
@@ -14,9 +18,5 @@
     {
         "name": "aihold",
         "score": 4
-    },
-    {
-        "name": "aihold",
-        "score": 2
     }
 ]
