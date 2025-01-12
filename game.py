@@ -68,6 +68,15 @@ class Game:
         self.ai_held_piece = None
         self.ai_move_timer = 0  # Timer for AI move delay
         self.ai_move_delay = AI_MOVE_DELAY  # Use the configurable AI move delay
+        self.ai_game_timer = 60  # 60 seconds for AI game mode
+        self.ai_game_started = False
+
+
+        self.back_to_menu_button = Button(
+            rect=(SCREEN_WIDTH // 2 - 75, SCREEN_HEIGHT - 100, 150, 50),
+            text="Menu",
+            action=self.return_to_menu
+        )
 
         # Back button when game is paused
         self.back_button = Button(
@@ -163,6 +172,12 @@ class Game:
         if self.current_screen == 'menu':
             events = pygame.event.get()
             self.menu.handle_events(events)
+        elif self.current_screen == 'ai_score':
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    exit()
+                self.back_to_menu_button.handle_event(event, self)
         elif self.current_screen == 'game':
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -303,6 +318,8 @@ class Game:
                 self.current_piece = self.piece_generator.get_next_piece()
                 self.next_pieces = self.piece_generator.preview_next_pieces()
                 self.can_hold = True
+                if self.mode == "AI":
+                    self.ai_game_started = True
         elif self.current_screen == 'game':
             # Always update particles
             self.particle_system.update(1/60)
@@ -438,6 +455,13 @@ class Game:
                                 self.ai_current_piece = self.ai_piece_generator.get_next_piece()
                                 self.ai_current_piece.grid = self.ai_grid
                                 self.ai_next_pieces = self.ai_piece_generator.preview_next_pieces()
+
+                # Update AI game timer if in AI mode
+                if self.mode == "AI" and self.ai_game_started and not self.is_paused:
+                    self.ai_game_timer -= 1/60  # Decrease timer by 1 second per 60 frames
+                    if self.ai_game_timer <= 0:
+                        self.current_screen = 'ai_score'
+                        return
 
                 # Store the current last_move_was_rotation state before any automatic movements
                 was_rotation = self.last_move_was_rotation
@@ -591,6 +615,45 @@ class Game:
             self.draw_enter_name()
         elif self.current_screen == 'high_scores':
             self.draw_high_scores()
+        elif self.current_screen == 'ai_score':
+            self.screen.fill(COLORS['background'])
+            font = pygame.font.Font(FONT_NAME, 48)
+            text = font.render("AI Game Results", True, COLORS['white'])
+            text_rect = text.get_rect(center=(SCREEN_WIDTH // 2, 100))
+            self.screen.blit(text, text_rect)
+
+            # Display scores and difference
+            font_small = pygame.font.Font(FONT_NAME, 36)
+            score_diff = self.score.score - self.ai_score.score
+            color = COLORS['green'] if score_diff >= 0 else COLORS['red']
+            
+            player_text = font_small.render(f"Your Score: {self.score.score}", True, COLORS['white'])
+            ai_text = font_small.render(f"AI Score: {self.ai_score.score}", True, COLORS['white'])
+            diff_text = font_small.render(f"Score Difference: {abs(score_diff)}", True, color)
+            delay_text = font_small.render(f"AI Move Delay: {self.ai_move_delay}ms", True, COLORS['white'])
+            
+            # Get placement from ai_scores.json
+            from ai_score import AIScore
+            ai_score_handler = AIScore()
+            placement = ai_score_handler.get_placement(self.score.score, self.ai_move_delay)
+            placement_text = font_small.render(f"Your Placement: {placement}", True, COLORS['white'])
+
+            # Position all text elements
+            player_rect = player_text.get_rect(center=(SCREEN_WIDTH // 2, 180))
+            ai_rect = ai_text.get_rect(center=(SCREEN_WIDTH // 2, 230))
+            diff_rect = diff_text.get_rect(center=(SCREEN_WIDTH // 2, 280))
+            delay_rect = delay_text.get_rect(center=(SCREEN_WIDTH // 2, 330))
+            placement_rect = placement_text.get_rect(center=(SCREEN_WIDTH // 2, 380))
+
+            # Draw all text elements
+            self.screen.blit(player_text, player_rect)
+            self.screen.blit(ai_text, ai_rect)
+            self.screen.blit(diff_text, diff_rect)
+            self.screen.blit(delay_text, delay_rect)
+            self.screen.blit(placement_text, placement_rect)
+
+            # Draw back to menu button
+            self.back_to_menu_button.draw(self.screen)
 
         # Always draw the transition last
         self.transition.draw(self.screen)
