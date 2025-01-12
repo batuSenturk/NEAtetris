@@ -19,6 +19,7 @@ from particle import ParticleSystem
 import random
 from transition import Transition
 from tetris_ai import TetrisAI
+from ai_score import AIScore
 
 # Add these new constants
 INITIAL_DELAY = 170  # Milliseconds before key repeat starts
@@ -68,6 +69,21 @@ class Game:
         self.ai_held_piece = None
         self.ai_move_timer = 0  # Timer for AI move delay
         self.ai_move_delay = AI_MOVE_DELAY  # Use the configurable AI move delay
+        self.ai_game_timer = 60  # 60 seconds for AI game mode
+        self.ai_game_started = False
+        self.keys_per_piece = []  # List to store number of keys for each piece
+        self.current_piece_keys = 0  # Counter for current piece
+        self.game_start_time = None  # Track game start time
+        self.total_pieces = 0  # Track total pieces placed
+        self.game_end_time = None  # Track game end time
+        # Initialize AI score tracker
+        self.ai_score_tracker = AIScore()
+
+        self.back_to_menu_button = Button(
+            rect=(SCREEN_WIDTH // 2 - 75, SCREEN_HEIGHT - 100, 150, 50),
+            text="Menu",
+            action=self.return_to_menu
+        )
 
         # Back button when game is paused
         self.back_button = Button(
@@ -126,12 +142,22 @@ class Game:
             self.ai_next_pieces = self.ai_piece_generator.preview_next_pieces()
             self.ai_score = Score()
             self.ai_held_piece = None
+            
+            # Reset statistics for new game
+            self.keys_per_piece = []
+            self.current_piece_keys = 0
+            self.game_start_time = pygame.time.get_ticks() / 1000  # Convert to seconds
+            self.total_pieces = 0
+            self.ai_game_timer = 60  # Reset timer to 60 seconds
         else:
             # Single centered grid for other modes
             self.grid = Grid(10, 20, 'center')
             self.piece_generator = PieceGenerator(self.grid)
             self.current_piece = None
             self.next_pieces = self.piece_generator.preview_next_pieces()
+            # Initialize statistics for all modes
+            self.game_start_time = pygame.time.get_ticks() / 1000  # Convert to seconds
+            self.total_pieces = 0
         
         self.score = Score()
         self.hud = HUD(self)
@@ -163,6 +189,12 @@ class Game:
         if self.current_screen == 'menu':
             events = pygame.event.get()
             self.menu.handle_events(events)
+        elif self.current_screen == 'ai_score':
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    exit()
+                self.back_to_menu_button.handle_event(event, self)
         elif self.current_screen == 'game':
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -176,6 +208,9 @@ class Game:
                     elif event.key == pygame.K_p:
                         if self.current_screen == 'game':
                             self.is_paused = not self.is_paused
+                    # Track key presses for statistics
+                    if self.mode == "AI":
+                        self.current_piece_keys += 1
                 
                 # Handle back button and skip other inputs if paused
                 if self.is_paused:
@@ -303,6 +338,9 @@ class Game:
                 self.current_piece = self.piece_generator.get_next_piece()
                 self.next_pieces = self.piece_generator.preview_next_pieces()
                 self.can_hold = True
+                if self.mode == "AI":
+                    self.ai_game_started = True
+                    self.game_start_time = pygame.time.get_ticks() / 1000  # Initialize game start time
         elif self.current_screen == 'game':
             # Always update particles
             self.particle_system.update(1/60)
@@ -316,7 +354,19 @@ class Game:
                     self.can_hold = True
                 return
 
-            if self.game_over or self.is_paused:
+            if self.is_paused:
+                return
+
+            if self.mode == "AI":
+                # Update AI game timer
+                if self.ai_game_started:
+                    self.ai_game_timer -= 1/60
+                    if self.ai_game_timer <= 0:
+                        self.game_over = True
+                        self.handle_game_over()  # Call handle_game_over when timer ends
+                        return
+
+            if self.game_over:
                 return
 
             current_time = pygame.time.get_ticks()
@@ -512,9 +562,12 @@ class Game:
                     self.next_pieces = self.piece_generator.preview_next_pieces()
                     self.can_hold = True  # Reset hold ability for new piece
 
+                    if self.mode == "AI":
+                        self.on_piece_placed()
+
                     if self.grid.is_collision(self.current_piece):
                         self.game_over = True
-                        self.current_screen = 'game_over'
+                        self.handle_game_over()
                         self.check_high_score()
 
             self.transition.update(1/60)
@@ -524,6 +577,30 @@ class Game:
                     self.level_up_effect = None
 
             self.hud.update()
+
+    def handle_game_over(self):
+        # Set game end time when game ends
+        self.game_end_time = pygame.time.get_ticks() / 1000
+        
+        if self.mode == "AI":
+            stats = self.calculate_statistics()
+
+            if stats:
+                self.ai_score_tracker.add_score(stats)
+            self.current_screen = 'ai_score'  # Change to ai_score screen instead of menu
+            self.game_over = False  # Reset game over state
+        elif self.mode == "Classic Mode":
+            if self.score.score > 0:
+                self.current_screen = 'enter_name'
+                self.input_box = InputBox(SCREEN_WIDTH//2 - 100, SCREEN_HEIGHT//2, 200, 32)
+        elif self.mode == "Sprint Mode":
+            if self.lines_cleared >= 40:
+                self.current_screen = 'enter_name'
+                self.input_box = InputBox(SCREEN_WIDTH//2 - 100, SCREEN_HEIGHT//2, 200, 32)
+        elif self.mode == "Ultra Mode":
+            if self.score.score > 0:
+                self.current_screen = 'enter_name'
+                self.input_box = InputBox(SCREEN_WIDTH//2 - 100, SCREEN_HEIGHT//2, 200, 32)
 
     def check_high_score(self):
         """Check if the current score qualifies as a high score."""
@@ -591,6 +668,51 @@ class Game:
             self.draw_enter_name()
         elif self.current_screen == 'high_scores':
             self.draw_high_scores()
+        elif self.current_screen == 'ai_score':
+            self.screen.fill(COLORS['background'])
+            font = pygame.font.Font(FONT_NAME, 48)
+            text = font.render("AI Game Results", True, COLORS['white'])
+            text_rect = text.get_rect(center=(SCREEN_WIDTH // 2, 100))
+            self.screen.blit(text, text_rect)
+
+            # Display scores and difference
+            font_small = pygame.font.Font(FONT_NAME, 36)
+            score_diff = self.score.score - self.ai_score.score
+            color = COLORS['green'] if score_diff >= 0 else COLORS['red']
+            
+            player_text = font_small.render(f"Your Score: {self.score.score}", True, COLORS['white'])
+            ai_text = font_small.render(f"AI Score: {self.ai_score.score}", True, COLORS['white'])
+            diff_text = font_small.render(f"Score Difference: {abs(score_diff)}", True, color)
+            delay_text = font_small.render(f"AI Move Delay: {self.ai_move_delay}ms", True, COLORS['white'])
+            kpp_text = font_small.render(f"Keys Per Piece: {round(sum(self.keys_per_piece) / len(self.keys_per_piece) if self.keys_per_piece else 0, 2)}", True, COLORS['white'])
+            pps_text = font_small.render(f"Pieces Per Second: {round(self.total_pieces / (self.game_end_time - self.game_start_time), 2)}", True, COLORS['white'])
+            
+            # Get placement from ai_scores.json
+            from ai_score import AIScore
+            ai_score_handler = AIScore()
+            placement = ai_score_handler.get_placement(score_diff, self.ai_move_delay)
+            placement_text = font_small.render(f"Your Placement: {placement}", True, COLORS['white'])
+
+            # Position all text elements
+            player_rect = player_text.get_rect(center=(SCREEN_WIDTH // 2, 180))
+            ai_rect = ai_text.get_rect(center=(SCREEN_WIDTH // 2, 230))
+            diff_rect = diff_text.get_rect(center=(SCREEN_WIDTH // 2, 280))
+            delay_rect = delay_text.get_rect(center=(SCREEN_WIDTH // 2, 330))
+            kpp_rect = kpp_text.get_rect(center=(SCREEN_WIDTH // 2, 380))
+            pps_rect = pps_text.get_rect(center=(SCREEN_WIDTH // 2, 430))
+            placement_rect = placement_text.get_rect(center=(SCREEN_WIDTH // 2, 480))
+
+            # Draw all text elements
+            self.screen.blit(player_text, player_rect)
+            self.screen.blit(ai_text, ai_rect)
+            self.screen.blit(diff_text, diff_rect)
+            self.screen.blit(delay_text, delay_rect)
+            self.screen.blit(kpp_text, kpp_rect)
+            self.screen.blit(pps_text, pps_rect)
+            self.screen.blit(placement_text, placement_rect)
+
+            # Draw back to menu button
+            self.back_to_menu_button.draw(self.screen)
 
         # Always draw the transition last
         self.transition.draw(self.screen)
@@ -811,3 +933,31 @@ class Game:
             self.current_piece = Tetromino(self.held_piece.shape_name, self.grid)
             self.current_piece.reset_position()  # Reset position of the swapped piece
             self.held_piece = Tetromino(temp_shape_name, self.grid)
+
+    def on_piece_placed(self):
+        # Track total pieces for all modes
+        self.total_pieces += 1
+        
+        if self.mode == "AI":
+            self.keys_per_piece.append(self.current_piece_keys)
+            self.current_piece_keys = 0
+
+    def calculate_statistics(self):
+        if not self.game_start_time:
+            return None
+            
+        self.game_end_time = pygame.time.get_ticks() / 1000
+        game_duration = self.game_end_time - self.game_start_time
+        avg_keys_per_piece = sum(self.keys_per_piece) / len(self.keys_per_piece) if self.keys_per_piece else 0
+        pieces_per_second = self.total_pieces / game_duration if game_duration > 0 else 0
+        
+        return {
+            "score": self.score.score,
+            "ai_score": self.ai_score.score if hasattr(self, 'ai_score') else 0,
+            "score_difference": self.score.score - self.ai_score.score if hasattr(self, 'ai_score') else 0,
+            "keys_per_piece": round(avg_keys_per_piece, 2),
+            "pieces_per_second": round(pieces_per_second, 2),
+            "delay": self.ai_move_delay,
+            "total_pieces": self.total_pieces,
+            "game_duration": round(game_duration, 2)
+        }

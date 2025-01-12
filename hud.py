@@ -199,16 +199,15 @@ class HUD:
                     pygame.draw.rect(screen, COLORS['white'], rect, 1)
 
     def draw_score_difference(self, screen):
-        # Calculate score difference (player - AI)
-        score_diff = self.game.score.score - self.game.ai_score.score
-        
-        # Set color based on score difference
-        color = COLORS['green'] if score_diff > 0 else COLORS['red'] if score_diff < 0 else COLORS['white']
-        
-        # Format the score difference with a + sign if positive
-        diff_text = f"+{score_diff}" if score_diff > 0 else str(score_diff)
-        diff_surface = self.font.render(f"Score Difference: {diff_text}", True, color)
-        
-        # Position the text in the middle top of the screen
-        diff_rect = diff_surface.get_rect(center=(SCREEN_WIDTH // 2, 50))
-        screen.blit(diff_surface, diff_rect)
+        if self.game.score and self.game.ai_score:
+            score_diff = self.game.score.score - self.game.ai_score.score
+            color = COLORS['green'] if score_diff >= 0 else COLORS['red']
+            diff_text = self.font.render(f"Score Diff: {abs(score_diff)}", True, color)
+            diff_rect = diff_text.get_rect(center=(SCREEN_WIDTH // 2, 30))
+            screen.blit(diff_text, diff_rect)
+
+            # Draw timer if game is in progress
+            if self.game.ai_game_started and not self.game.game_over:
+                timer_text = self.font.render(f"Time: {int(self.game.ai_game_timer)}s", True, COLORS['white'])
+                timer_rect = timer_text.get_rect(center=(SCREEN_WIDTH // 2, 70))
+                screen.blit(timer_text, timer_rect)
