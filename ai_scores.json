@@ -1,3 +1,74 @@
 {
-    "scores": []
+    "scores": [
+        {
+            "score": 350,
+            "ai_score": 11936,
+            "score_difference": -11586,
+            "keys_per_piece": 4.5,
+            "pieces_per_second": 0.98,
+            "delay": 100,
+            "total_pieces": 6,
+            "game_duration": 6.1
+        },
+        {
+            "score": 5632,
+            "ai_score": 32770,
+            "score_difference": -27138,
+            "keys_per_piece": 5.31,
+            "pieces_per_second": 0.75,
+            "delay": 100,
+            "total_pieces": 45,
+            "game_duration": 60.16
+        },
+        {
+            "score": 3240,
+            "ai_score": 44682,
+            "score_difference": -41442,
+            "keys_per_piece": 5.97,
+            "pieces_per_second": 0.58,
+            "delay": 100,
+            "total_pieces": 35,
+            "game_duration": 60.32
+        },
+        {
+            "score": 5894,
+            "ai_score": 29314,
+            "score_difference": -23420,
+            "keys_per_piece": 5.06,
+            "pieces_per_second": 0.81,
+            "delay": 100,
+            "total_pieces": 49,
+            "game_duration": 60.36
+        },
+        {
+            "score": 3098,
+            "ai_score": 31932,
+            "score_difference": -28834,
+            "keys_per_piece": 6.4,
+            "pieces_per_second": 0.7,
+            "delay": 100,
+            "total_pieces": 42,
+            "game_duration": 60.29
+        },
+        {
+            "score": 3565,
+            "ai_score": 33180,
+            "score_difference": -29615,
+            "keys_per_piece": 5.68,
+            "pieces_per_second": 0.69,
+            "delay": 100,
+            "total_pieces": 41,
+            "game_duration": 59.68
+        },
+        {
+            "score": 4396,
+            "ai_score": 31680,
+            "score_difference": -27284,
+            "keys_per_piece": 5.59,
+            "pieces_per_second": 0.73,
+            "delay": 100,
+            "total_pieces": 44,
+            "game_duration": 59.92
+        }
+    ]
 }
