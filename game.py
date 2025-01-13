@@ -580,14 +580,6 @@ class Game:
             if self.score.score > 0:
                 self.current_screen = 'enter_name'
                 self.input_box = InputBox(SCREEN_WIDTH//2 - 100, SCREEN_HEIGHT//2, 200, 32)
-        elif self.mode == "Sprint Mode":
-            if self.lines_cleared >= 40:
-                self.current_screen = 'enter_name'
-                self.input_box = InputBox(SCREEN_WIDTH//2 - 100, SCREEN_HEIGHT//2, 200, 32)
-        elif self.mode == "Ultra Mode":
-            if self.score.score > 0:
-                self.current_screen = 'enter_name'
-                self.input_box = InputBox(SCREEN_WIDTH//2 - 100, SCREEN_HEIGHT//2, 200, 32)
 
     def check_high_score(self):
         """Check if the current score qualifies as a high score."""

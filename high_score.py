@@ -24,6 +24,11 @@ class HighScore:
         return any(score > entry['score'] for entry in self.scores)
 
     def add_score(self, name, score):
+
+        #############################################
+        # GROUP B SKILL : File Organised for Access #
+        #############################################
+
         """Add a new score to the high score list."""
         self.scores.append({'name': name, 'score': score})
         # Sort scores in descending order
