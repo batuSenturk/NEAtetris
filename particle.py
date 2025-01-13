@@ -11,7 +11,7 @@ class Particle:
         self.original_size = random.randint(4, 8)
         self.size = self.original_size
         
-        # Random angle and speed for more natural movement
+        # Random angle and speed for natural movement
         angle = random.uniform(0, 2 * math.pi)
         speed = random.uniform(100, 300)
         self.speed_x = math.cos(angle) * speed

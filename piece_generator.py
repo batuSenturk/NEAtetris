@@ -20,6 +20,11 @@ class PieceGenerator:
         if not self.bag:
             self.generate_new_bag()
         shape = self.bag.pop()
+
+        ###############################################
+        # GROUP A SKILL : Dynamic OOP object creation #
+        ###############################################
+
         return Tetromino(shape, self.grid)
 
     def fill_queue(self):

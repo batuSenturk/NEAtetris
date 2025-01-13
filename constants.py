@@ -29,6 +29,10 @@ COLORS = {
     'green': (0, 255, 0),
 }
 
+###########################################
+# GROUP B SKILL : Multidimensional Arrays #
+###########################################
+
 # Shapes (2D Matrices)
 SHAPES = {
     'I': [[0, 0, 0, 0],
@@ -117,5 +121,6 @@ MAX_LOCK_MOVES = 10  # Maximum number of moves before forcing lock
 HOLD_X_OFFSET = 500  # X position for hold piece display
 HOLD_Y_OFFSET = 100  # Y position for hold piece display
 
-# In the scoring section, add:
-HOLD_KEY = pygame.K_c  # Key to hold pieces
+INITIAL_DELAY = 170  # Milliseconds before key repeat starts
+REPEAT_DELAY = 50    # Milliseconds between repeated movements
+AI_MOVE_DELAY = 0  # Milliseconds between AI moves

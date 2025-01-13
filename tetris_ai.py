@@ -4,6 +4,10 @@ import copy
 import numpy as np
 from tetromino import Tetromino, SHAPES
 
+#################################
+# GROUP A SKILL : COMPLEX MODEL #
+#################################
+
 class TetrisAI:
     def __init__(self, game):
         self.game = game

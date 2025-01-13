@@ -116,16 +116,11 @@ class Tetromino:
 
             # Check if this position works
             if not self.grid.is_collision(self):
-                # Position is valid, keep it
-                print(f"Wall kick succeeded with offset: ({dx}, {dy})")
                 return True
 
-            # Position didn't work, revert
             self.x = original_x
             self.y = original_y
 
-        # If we get here, no kick worked
-        print("All wall kicks failed")
         return False
 
     def is_touching_ground(self):
@@ -188,53 +183,3 @@ class Tetromino:
                 pygame.draw.rect(screen, self.color, rect)
                 pygame.draw.rect(screen, COLORS['white'], rect, 1)
 
-def multiply_matrices(A, B):
-    """
-    Multiply two n x n matrices A and B and return the resulting matrix AB.
-
-    Parameters:
-    A (list of lists): The first matrix to multiply.
-    B (list of lists): The second matrix to multiply.
-
-    Returns:
-    list of lists: The product matrix AB.
-    """
-
-    n = len(A)  # Size of the matrices
-
-    # Initialize the result matrix with zeros
-    result = [[0 for _ in range(n)] for _ in range(n)]
-
-    # Perform matrix multiplication
-    for i in range(n):
-        for j in range(n):
-            for k in range(n):
-                result[i][j] += A[i][k] * B[k][j]
-            # Debug statement to trace computation
-            # print(f"result[{i}][{j}] = {result[i][j]}")
-    
-    return result
-
-if __name__ == "__main__":
-    # Test the multiply_matrices function
-
-    A = [[0, 0, 1], 
-         [0, 0, 0],
-         [0, 0, 0]]
-        
-    B = [[1, 2, 3], 
-         [4, 5, 6],
-         [7, 8, 9]]
-    
-    result = multiply_matrices(A, B)
-    print("Matrix A:")
-    for row in A:
-        print(row)
-    
-    print("\nMatrix B:")
-    for row in B:
-        print(row)
-    
-    print("\nResult of A * B:")
-    for row in result:
-        print(row)

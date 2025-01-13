@@ -17,11 +17,6 @@ class HighScore:
         else:
             self.scores = []
 
-    def save_scores(self):
-        """Save high scores to a JSON file."""
-        with open(HIGH_SCORE_FILE, 'w') as file:
-            json.dump(self.scores, file, indent=4)
-
     def is_high_score(self, score):
         """Check if the given score qualifies as a high score."""
         if len(self.scores) < MAX_HIGH_SCORES:
@@ -36,3 +31,8 @@ class HighScore:
         # Keep only top MAX_HIGH_SCORES
         self.scores = self.scores[:MAX_HIGH_SCORES]
         self.save_scores()
+    
+    def save_scores(self):
+        """Save high scores to a JSON file."""
+        with open(HIGH_SCORE_FILE, 'w') as file:
+            json.dump(self.scores, file, indent=4)

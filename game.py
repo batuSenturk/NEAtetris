@@ -12,7 +12,7 @@ from input_box import InputBox
 from constants import (
     SCREEN_WIDTH, SCREEN_HEIGHT, COLORS, FONT_NAME,
     INITIAL_DROP_SPEED, MIN_DROP_SPEED, SPEED_INCREMENT, GHOST_ALPHA,
-    LOCK_DELAY, MAX_LOCK_MOVES
+    LOCK_DELAY, MAX_LOCK_MOVES, INITIAL_DELAY, REPEAT_DELAY, AI_MOVE_DELAY
 )
 from tetromino import Tetromino
 from particle import ParticleSystem
@@ -21,10 +21,6 @@ from transition import Transition
 from tetris_ai import TetrisAI
 from ai_score import AIScore
 
-# Add these new constants
-INITIAL_DELAY = 170  # Milliseconds before key repeat starts
-REPEAT_DELAY = 50    # Milliseconds between repeated movements
-AI_MOVE_DELAY = 0  # Milliseconds between AI moves
 
 class Game:
     def __init__(self, screen):
@@ -58,10 +54,8 @@ class Game:
         self.start_timer_duration = 3  # 3 seconds
         self.countdown_timer = None
         self.held_piece = None
-        self.can_hold = True  # Can only hold once per piece
+        self.can_hold = True # Bool means can only use once per round
         self.ai = TetrisAI(self)
-        self.ai_debug_timer = 0
-        self.ai_debug_interval = 1000  # Print debug info every 1000ms
         self.ai_grid = None
         self.ai_score = None
         self.ai_current_piece = None
@@ -76,7 +70,6 @@ class Game:
         self.game_start_time = None  # Track game start time
         self.total_pieces = 0  # Track total pieces placed
         self.game_end_time = None  # Track game end time
-        # Initialize AI score tracker
         self.ai_score_tracker = AIScore()
 
         self.back_to_menu_button = Button(
@@ -107,7 +100,7 @@ class Game:
         ]
 
         # Input box for entering name
-        self.input_box = None  # Initialized when needed
+        self.input_box = None
 
         # Buttons for high score display
         self.high_score_buttons = [
@@ -118,7 +111,6 @@ class Game:
             )
         ]
 
-        # Add these new variables to the existing __init__ method
         self.left_pressed = False
         self.right_pressed = False
         self.down_pressed = False
@@ -167,7 +159,7 @@ class Game:
         self.drop_speed = INITIAL_DROP_SPEED
         self.last_update_time = pygame.time.get_ticks()
         self.current_screen = 'transition_to_game'
-        self.countdown_timer = None  # Will be set after transition
+        self.countdown_timer = None
         self.held_piece = None
         self.can_hold = True
         
@@ -201,7 +193,6 @@ class Game:
                     pygame.quit()
                     exit()
                 
-                # Handle pause button regardless of pause state
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_ESCAPE:
                         self.return_to_menu()
@@ -212,7 +203,7 @@ class Game:
                     if self.mode == "AI":
                         self.current_piece_keys += 1
                 
-                # Handle back button and skip other inputs if paused
+                # Handle back button
                 if self.is_paused:
                     self.back_button.handle_event(event, self)  
                     continue
@@ -310,9 +301,9 @@ class Game:
                 if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
                     self.return_to_menu()
                 name = self.input_box.handle_event(event)
-                if name is not None and name.strip():  # Check if name is not empty
+                if name is not None and name.strip():
                     self.high_score.add_score(name, self.score.score)
-                    self.current_screen = 'high_scores'  # Direct assignment instead of change_screen
+                    self.current_screen = 'high_scores'
         elif self.current_screen == 'high_scores':
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -327,12 +318,12 @@ class Game:
         if self.current_screen == 'menu':
             self.menu.update()
         elif self.current_screen == 'transition_to_game':
-            self.transition.update(1/60)  # Assume 60 FPS
+            self.transition.update(1/60)
             if not self.transition.is_active:
                 self.current_screen = 'countdown'
                 self.countdown_timer = 3
         elif self.current_screen == 'countdown':
-            self.countdown_timer -= 1/60  # Assume 60 FPS
+            self.countdown_timer -= 1/60
             if self.countdown_timer <= 0:
                 self.current_screen = 'game'
                 self.current_piece = self.piece_generator.get_next_piece()
@@ -342,9 +333,7 @@ class Game:
                     self.ai_game_started = True
                     self.game_start_time = pygame.time.get_ticks() / 1000  # Initialize game start time
         elif self.current_screen == 'game':
-            # Always update particles
             self.particle_system.update(1/60)
-
             if self.start_timer is not None:
                 self.start_timer -= 1/60
                 if self.start_timer <= 0:
@@ -363,7 +352,7 @@ class Game:
                     self.ai_game_timer -= 1/60
                     if self.ai_game_timer <= 0:
                         self.game_over = True
-                        self.handle_game_over()  # Call handle_game_over when timer ends
+                        self.handle_game_over()
                         return
 
             if self.game_over:
@@ -407,7 +396,7 @@ class Game:
                                     self.ai_held_piece = Tetromino(temp_shape_name, self.ai_grid)
                                 return
 
-                            # Execute one move at a time with proper validation and visual updates
+                            # Execute one move at a time
                             moved = False
                             if self.ai_current_piece.rotation_state != best_move['rotation']:
                                 # Rotate once
@@ -489,7 +478,6 @@ class Game:
                                 self.ai_current_piece.grid = self.ai_grid
                                 self.ai_next_pieces = self.ai_piece_generator.preview_next_pieces()
 
-                # Store the current last_move_was_rotation state before any automatic movements
                 was_rotation = self.last_move_was_rotation
 
                 if self.drop_timer > self.drop_speed:
@@ -515,7 +503,7 @@ class Game:
                     # Use the stored rotation state for T-spin detection
                     t_spin_type = self.check_t_spin() if was_rotation else False
 
-                    # Lock the piece first
+                    # Lock the piece
                     self.grid.lock_piece(self.current_piece)
                     
                     # Clear lines and handle scoring
@@ -526,15 +514,15 @@ class Game:
                     
                     lines_cleared = len(lines_to_clear)
                     if lines_cleared > 0:
-                        # Create particles before clearing the lines
-                        self.create_line_clear_particles(lines_to_clear)  # Pass the lines to clear
+                        # Handle line clear
+                        self.create_line_clear_particles(lines_to_clear)
                         self.grid.clear_lines()
                     
-                    # Calculate score with the correct number of lines cleared
+                    # Calculate score 
                     turn_score, notifications = self.score.update(
                         lines_cleared,
-                        t_spin_type,  # This now returns "normal", "mini", or False
-                        False,  # Remove this parameter since we don't need it anymore
+                        t_spin_type,
+                        False,
                         self.drop_height,
                         self.soft_drop_count,
                         self.hard_drop_count
@@ -544,12 +532,11 @@ class Game:
                     if notifications:
                         self.hud.add_notifications(notifications, is_ai=False)
                     
-                    # Only reset flags after all scoring is done
                     self.drop_height = 0
                     self.soft_drop_count = 0
                     self.hard_drop_count = 0
                     self.last_rotation = False
-                    self.last_move_was_rotation = False  # Reset this last
+                    self.last_move_was_rotation = False
 
                     if lines_cleared > 0:
                         self.score.update_level()
@@ -587,7 +574,7 @@ class Game:
 
             if stats:
                 self.ai_score_tracker.add_score(stats)
-            self.current_screen = 'ai_score'  # Change to ai_score screen instead of menu
+            self.current_screen = 'ai_score'
             self.game_over = False  # Reset game over state
         elif self.mode == "Classic Mode":
             if self.score.score > 0:
@@ -607,10 +594,10 @@ class Game:
         if self.high_score.is_high_score(self.score.score):
             # Prompt the player to enter their name
             self.input_box = InputBox(SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2 + 50, 200, 50)
-            self.current_screen = 'enter_name'  # Changed from change_screen to direct assignment
+            self.current_screen = 'enter_name'
         else:
             # No high score achieved, go directly to high scores
-            self.current_screen = 'high_scores'  # Changed from change_screen to direct assignment
+            self.current_screen = 'high_scores'
 
     def update_drop_speed(self):
         self.drop_speed = max(
@@ -714,7 +701,6 @@ class Game:
             # Draw back to menu button
             self.back_to_menu_button.draw(self.screen)
 
-        # Always draw the transition last
         self.transition.draw(self.screen)
 
     def draw_ghost_piece(self, piece=None, is_ai=False):
@@ -723,7 +709,7 @@ class Game:
         if not piece:
             return
         
-        # Get ghost piece using get_ghost_position which properly handles rotations
+        # Get ghost piece 
         ghost_piece = piece.get_ghost_position()
         
         # Draw ghost piece with transparency
@@ -752,12 +738,12 @@ class Game:
         self.screen.blit(text, rect)
 
     def draw_game_over(self):
-        # First draw the game state underneath
+        # Draw the game state underneath
         self.screen.fill(COLORS['background'])
         self.grid.draw(self.screen)
         self.hud.draw(self.screen)
         
-        # Then draw the overlay
+        # Draw the overlay
         overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
         overlay.set_alpha(128)
         overlay.fill((0, 0, 0))
@@ -878,12 +864,11 @@ class Game:
         for y in lines_to_clear:
             for x in range(self.grid.width):
                 if self.grid.cells[y][x] != 0:  # If there's a block at this position
-                    # Calculate the actual pixel position
+                    # Calculate the pixel position
                     particle_x = self.grid.x_offset + x * self.grid.cell_size + self.grid.cell_size // 2
                     particle_y = self.grid.y_offset + y * self.grid.cell_size + self.grid.cell_size // 2
                     color = self.grid.cells[y][x]  # Get the color of the block
                     
-                    # Create multiple particles per block
                     for _ in range(5):  # Create 5 particles per block
                         self.particle_system.add_particle(particle_x, particle_y, color)
 

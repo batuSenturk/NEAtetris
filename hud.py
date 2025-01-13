@@ -104,7 +104,7 @@ class HUD:
         hud_x = ai_grid_right + 50  # Add some padding
         hold_x = self.game.ai_grid.x_offset - 150  # Position hold piece to the left of grid
 
-        # AI score and level on the right of AI grid
+        # AI score and level
         score_text = self.font.render(f"AI Score: {self.game.ai_score.score}", True, COLORS['white'])
         level_text = self.font.render(f"AI Level: {self.game.ai_score.level}", True, COLORS['white'])
         
@@ -119,7 +119,7 @@ class HUD:
         if self.game.ai_next_pieces:
             self.draw_next_pieces(screen, self.game.ai_next_pieces, hud_x)
 
-        # Draw AI's held piece on the left
+        # Draw AI's held piece
         hold_text = self.font.render("Hold:", True, COLORS['white'])
         screen.blit(hold_text, (hold_x, HOLD_Y_OFFSET))
         if self.game.ai_held_piece:

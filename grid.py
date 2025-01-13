@@ -5,17 +5,20 @@ from constants import CELL_SIZE, GRID_X_OFFSET, GRID_Y_OFFSET, COLORS, SCREEN_WI
 
 class Grid:
     def __init__(self, width, height, position='center'):
+
+        #####################################
+        # GROUP A SKILL : Complex Structure #
+        #####################################
+
         self.width = width
         self.height = height
         self.cells = [[0 for _ in range(width)] for _ in range(height)]
         self.cell_size = CELL_SIZE
         # Adjust x_offset based on position
         if position == 'left':
-            # Move player grid more to the left
-            self.x_offset = GRID_X_OFFSET + 50  # Reduced from 100 to 50
+            self.x_offset = GRID_X_OFFSET + 50
         elif position == 'right':
-            # Move AI grid more to the right
-            self.x_offset = SCREEN_WIDTH - GRID_X_OFFSET - (width * CELL_SIZE) - 150  # Changed from 250 to 150
+            self.x_offset = SCREEN_WIDTH - GRID_X_OFFSET - (width * CELL_SIZE) - 150
         else:  # center
             self.x_offset = (SCREEN_WIDTH - (width * CELL_SIZE)) // 2
         self.y_offset = GRID_Y_OFFSET

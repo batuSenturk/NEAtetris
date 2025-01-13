@@ -90,7 +90,7 @@ class Menu:
             action=self.show_high_scores
         )
 
-        # Add input box for AI move delay
+        # Input box for AI move delay
         self.ai_delay_input = InputBox(
             SCREEN_WIDTH // 2 - 100,  # x position
             420,  # y position
@@ -271,7 +271,7 @@ class Menu:
             "Press 'Play' to begin!"
         ]
 
-        y_offset = 50  # Move this higher up
+        y_offset = 50
         for line in description_lines:
             text = self.font.render(line, True, (255, 255, 255))
             rect = text.get_rect(center=(SCREEN_WIDTH // 2, y_offset))
@@ -342,7 +342,6 @@ class Menu:
         self.high_scores_button.draw(screen)
 
     def draw_rules(self, screen):
-        # Update the rules text to include hold mechanic
 
         rules_text = [
             f"{self.selected_mode} Rules:",
@@ -352,7 +351,7 @@ class Menu:
             "Up Arrow - Rotate",
             "Down Arrow - Soft Drop",
             "Space - Hard Drop",
-            "C - Hold Piece",  # Add this line
+            "C - Hold Piece",
             "P - Pause",
             "",
             "Hold Feature:",
