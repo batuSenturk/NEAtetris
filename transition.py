@@ -1,3 +1,5 @@
+# transition.py
+
 import pygame
 from constants import SCREEN_WIDTH, SCREEN_HEIGHT
 
