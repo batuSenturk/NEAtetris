@@ -26,14 +26,38 @@ class AIScore:
         self.scores["scores"].append(score_data)
         self.save_scores()
 
-    def get_placement(self, score_difference, delay):
-        # Filter scores with the same delay
-        delay_scores = [s["score_difference"] for s in self.scores["scores"] if s["delay"] == delay]
-        if not delay_scores:
-            return 1  # First score with this delay
+    def quicksort(self, arr):
+        if len(arr) <= 1:
+            return arr
         
-        # Count how many scores are higher
-        placement = sum(1 for s in delay_scores if s >= score_difference)
+        pivot = arr[len(arr) // 2]
+        left = [x for x in arr if x > pivot]  # Greater than pivot for descending order
+        middle = [x for x in arr if x == pivot]
+        right = [x for x in arr if x < pivot]  # Less than pivot for descending order
+        
+        return self.quicksort(left) + middle + self.quicksort(right)
+
+    def get_placement(self, score_difference, delay):
+        # Group scores by delay
+        delay_groups = {}
+        for score in self.scores["scores"]:
+            if score["delay"] not in delay_groups:
+                delay_groups[score["delay"]] = []
+            delay_groups[score["delay"]].append(score["score_difference"])
+
+        # Sort the scores for the specified delay
+        if delay not in delay_groups:
+            return 1  # No scores for this delay, so placement is 1
+
+        delay_scores = delay_groups[delay]
+        delay_scores = self.quicksort(delay_scores)
+
+        # Find placement
+        placement = 1
+        for s in delay_scores:
+            if s > score_difference:
+                placement += 1
+
         return placement
 
     def get_total_games(self, delay):

@@ -79,6 +79,76 @@
             "delay": 500,
             "total_pieces": 41,
             "game_duration": 60.14
+        },
+        {
+            "score": 4102,
+            "ai_score": 90440,
+            "score_difference": -86338,
+            "keys_per_piece": 5.32,
+            "pieces_per_second": 0.68,
+            "delay": 50,
+            "total_pieces": 41,
+            "game_duration": 60.19
+        },
+        {
+            "score": 0,
+            "ai_score": 1301050,
+            "score_difference": -1301050,
+            "keys_per_piece": 0.0,
+            "pieces_per_second": 0.12,
+            "delay": 0,
+            "total_pieces": 7,
+            "game_duration": 59.48
+        },
+        {
+            "score": 0,
+            "ai_score": 29466,
+            "score_difference": -29466,
+            "keys_per_piece": 0.22,
+            "pieces_per_second": 0.01,
+            "delay": 100,
+            "total_pieces": 9,
+            "game_duration": 1110.93
+        },
+        {
+            "score": 0,
+            "ai_score": 33856,
+            "score_difference": -33856,
+            "keys_per_piece": 0.57,
+            "pieces_per_second": 0.12,
+            "delay": 100,
+            "total_pieces": 7,
+            "game_duration": 60.24
+        },
+        {
+            "score": 18,
+            "ai_score": 30556,
+            "score_difference": -30538,
+            "keys_per_piece": 3.33,
+            "pieces_per_second": 0.05,
+            "delay": 100,
+            "total_pieces": 6,
+            "game_duration": 114.82
+        },
+        {
+            "score": 3180,
+            "ai_score": 100302,
+            "score_difference": -97122,
+            "keys_per_piece": 6.03,
+            "pieces_per_second": 0.65,
+            "delay": 50,
+            "total_pieces": 39,
+            "game_duration": 59.97
+        },
+        {
+            "score": 4037,
+            "ai_score": 34176,
+            "score_difference": -30139,
+            "keys_per_piece": 5.22,
+            "pieces_per_second": 0.85,
+            "delay": 100,
+            "total_pieces": 51,
+            "game_duration": 60.0
         }
     ]
 }
