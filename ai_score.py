@@ -30,7 +30,12 @@ class AIScore:
         if len(arr) <= 1:
             return arr
         
-        pivot = arr[len(arr) // 2]
+        a = arr[0]        
+        b = arr[len(arr) // 2]
+        c = arr[-1]
+
+        pivot = a if (b <= a <= c) or (c <= a <= b) else b if (a <= b <= c) or (c <= b <= a) else c
+
         left = [x for x in arr if x > pivot]  # Greater than pivot for descending order
         middle = [x for x in arr if x == pivot]
         right = [x for x in arr if x < pivot]  # Less than pivot for descending order

@@ -1,0 +1,8 @@
+This algorithm uses the divide-and-conquer strategy to sort the list. Quick Sort selects a pivot element and partitions the list into two sublists: elements less than the pivot and elements greater than the pivot. It then recursively sorts the sublists. Known for its speed and efficiency, Quick Sort is widely used in practice and is often the go-to algorithm for sorting large datasets.
+
+Time Complexity: O(n²)
+How it Works:
+Choose a pivot element from the list.
+Partition the list into two sublists: elements less than the pivot and elements greater than the pivot.
+Recursively apply the above steps to the sublists.
+Combine the sorted sublists and the pivot to form the final sorted list.
