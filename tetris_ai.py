@@ -19,7 +19,7 @@ class TetrisAI:
             'covered_holes': -7.5,       
         }
         self.first_held_piece = True  # Flag to track if this is the first piece
-        self.hold_threshold = -15  # Threshold for holding the first piece
+        self.hold_threshold = -20  # Threshold for holding the first piece
 
     def get_state_representation(self, grid, piece):
         """Get the current state of the game"""

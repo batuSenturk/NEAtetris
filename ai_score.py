@@ -27,6 +27,15 @@ class AIScore:
         self.save_scores()
 
     def quicksort(self, arr):
+
+        ######################################
+        # GROUP A SKILL :Recursive Algorithm #
+        ######################################
+
+        ####################################
+        # GROUP A SKILL :Sorting Algorithm #
+        ####################################
+
         if len(arr) <= 1:
             return arr
         

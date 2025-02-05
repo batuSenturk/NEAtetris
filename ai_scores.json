@@ -149,6 +149,16 @@
             "delay": 100,
             "total_pieces": 51,
             "game_duration": 60.0
+        },
+        {
+            "score": 0,
+            "ai_score": 1183972,
+            "score_difference": -1183972,
+            "keys_per_piece": 0.0,
+            "pieces_per_second": 0.13,
+            "delay": 0,
+            "total_pieces": 8,
+            "game_duration": 59.73
         }
     ]
 }

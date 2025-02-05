@@ -3,40 +3,100 @@
 import random
 from tetromino import Tetromino
 
+class Queue:
+    """A simple queue implementation with basic operations"""
+    def __init__(self, capacity=None):
+        self.capacity = capacity
+        self.items = []
+
+    def enqueue(self, item):
+        if self.capacity is not None and self.size() >= self.capacity:
+            raise Exception("Queue is full")
+        self.items.append(item)
+
+    def dequeue(self):
+        if self.is_empty():
+            raise Exception("Queue is empty")
+        return self.items.pop(0)
+
+    def peak(self):
+        if self.is_empty():
+            raise Exception("Queue is empty")
+        return self.items[0]
+
+    def rear(self):
+        if self.is_empty():
+            raise Exception("Queue is empty")
+        return self.items[-1]
+
+    def is_empty(self):
+        return len(self.items) == 0
+
+    def is_full(self):
+        if self.capacity is None:
+            return False
+        return len(self.items) >= self.capacity
+
+    def size(self):
+        return len(self.items)
+
+    def as_list(self):
+        return list(self.items)
+
+
 class PieceGenerator:
     def __init__(self, grid):
         self.grid = grid
-        self.bag = []
-        self.next_pieces = []  # Queue of next pieces
+        # Initialize bag and next_pieces as Queues.
+        self.bag = Queue()  # No capacity limit needed for the bag.
+        self.next_pieces = Queue(capacity=5)  # Queue for next pieces with capacity 5.
         self.queue_size = 5    # Show next 5 pieces
         self.generate_new_bag()
         self.fill_queue()      # Fill the initial queue
 
     def generate_new_bag(self):
-        self.bag = list('IOTSZJL')
-        random.shuffle(self.bag)
+        pieces = list('IOTSZJL')
+        random.shuffle(pieces)
+
+        ####################################
+        # GROUP A SKILL : Queue Operations #
+        ####################################
+
+        self.bag = Queue()
+        for piece in pieces:
+            self.bag.enqueue(piece)
 
     def get_next_piece_from_bag(self):
-        if not self.bag:
+        if self.bag.is_empty():
             self.generate_new_bag()
-        shape = self.bag.pop()
+        
+        ####################################
+        # GROUP A SKILL : Queue Operations #
+        ####################################
 
-        ###############################################
-        # GROUP A SKILL : Dynamic OOP object creation #
-        ###############################################
-
+        shape = self.bag.dequeue()
         return Tetromino(shape, self.grid)
 
     def fill_queue(self):
         """Fill the queue up to queue_size pieces"""
-        while len(self.next_pieces) < self.queue_size:
-            self.next_pieces.append(self.get_next_piece_from_bag())
+
+        ####################################
+        # GROUP A SKILL : Queue Operations #
+        ####################################
+
+        while self.next_pieces.size() < self.queue_size:
+            self.next_pieces.enqueue(self.get_next_piece_from_bag())
 
     def get_next_piece(self):
-        current_piece = self.next_pieces.pop(0)  # Get the first piece from queue
-        self.fill_queue()  # Refill the queue
+        current_piece = self.next_pieces.dequeue()  # Remove the first piece from the queue
+        self.fill_queue()  # Refill the queue to maintain the queue size
         return current_piece
 
     def preview_next_pieces(self):
         """Return list of next pieces"""
-        return self.next_pieces
+
+        ####################################
+        # GROUP A SKILL : Queue Operations #
+        ####################################
+        
+        return self.next_pieces.as_list()

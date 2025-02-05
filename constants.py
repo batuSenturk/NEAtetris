@@ -121,6 +121,10 @@ MAX_LOCK_MOVES = 10  # Maximum number of moves before forcing lock
 HOLD_X_OFFSET = 500  # X position for hold piece display
 HOLD_Y_OFFSET = 100  # Y position for hold piece display
 
+# Delays
 INITIAL_DELAY = 170  # Milliseconds before key repeat starts
 REPEAT_DELAY = 50    # Milliseconds between repeated movements
 AI_MOVE_DELAY = 0  # Milliseconds between AI moves
+
+# Encryption key
+HIGH_SCORE_ENCRYPTION_KEY = "PiDWyn1yjbD6trGLRnYr2umUh3CKaQbDGihGHcw-dc0="
